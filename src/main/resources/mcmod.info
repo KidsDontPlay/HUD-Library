@@ -1,0 +1,15 @@
+[
+{
+  "modid": "hudlibrary",
+  "name": "HUD Library",
+  "description": "hudlibrary",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["MrRiegel"],
+  "credits": "The Forge and FML guys",
+  "logoFile": "",
+  "screenshots": []
+}
+]
