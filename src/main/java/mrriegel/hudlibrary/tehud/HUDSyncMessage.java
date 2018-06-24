@@ -10,6 +10,7 @@ import io.netty.buffer.ByteBuf;
 import mrriegel.hudlibrary.HUDLibrary;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
@@ -28,16 +29,20 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 
 	public HUDSyncMessage(EntityPlayer player) {
 		BlockPos playerPos = new BlockPos(player);
-		int radius = 6;
+		int radius = 7;
 		for (BlockPos p : BlockPos.getAllInBox(playerPos.add(-radius, -radius, -radius), playerPos.add(radius, radius, radius))) {
 			TileEntity t = player.world.getTileEntity(p);
-			if (t.hasCapability(HUDCapability.cap, null)) {
+			if (t != null && t.hasCapability(HUDCapability.cap, null)) {
 				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-				if (hud.readingSide().isServer()) {
+				if (hud.readingSide().isServer() && hud.needsSync()) {
 					for (EnumFacing f : EnumFacing.HORIZONTALS) {
-						for (IHUDElement e : hud.elements(player, f)) {
-							map.put(new DirectionPos(p, f), e.writeSyncTag());
+						NBTTagCompound n = new NBTTagCompound();
+						NBTTagList lis = new NBTTagList();
+						for (HUDElement e : hud.elements(player, f)) {
+							lis.appendTag(e.writeSyncTag(t));
 						}
+						n.setTag("list", lis);
+						map.put(new DirectionPos(p, f), n);
 					}
 				}
 			}

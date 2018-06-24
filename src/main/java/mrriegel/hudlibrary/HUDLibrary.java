@@ -1,35 +1,37 @@
 package mrriegel.hudlibrary;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.Validate;
+
 import mrriegel.hudlibrary.tehud.DirectionPos;
 import mrriegel.hudlibrary.tehud.HUDCapability;
-import mrriegel.hudlibrary.tehud.IHUDElement;
+import mrriegel.hudlibrary.tehud.HUDElement;
+import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Axis;
+import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.RayTraceResult.Type;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.capabilities.Capability;
@@ -44,6 +46,9 @@ import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
+import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
 @Mod(modid = HUDLibrary.MODID, name = HUDLibrary.MODNAME, version = HUDLibrary.VERSION, acceptedMinecraftVersions = "[1.12,1.13)")
@@ -57,6 +62,8 @@ public class HUDLibrary {
 	public static HUDLibrary instance;
 	static boolean dev;
 
+	public static SimpleNetworkWrapper snw;
+
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		Configuration config = new Configuration(event.getSuggestedConfigurationFile());
@@ -65,10 +72,23 @@ public class HUDLibrary {
 			config.save();
 		HUDCapability.register();
 		dev = (boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment");
+		int index = 0;
+		snw = new SimpleNetworkWrapper(MODID);
+		snw.registerMessage(HUDSyncMessage.class, HUDSyncMessage.class, index++, Side.CLIENT);
+
 	}
 
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent event) throws IOException {
+	}
+
+	@SubscribeEvent
+	public static void tick(PlayerTickEvent event) {
+		if (event.side.isServer() && event.phase == Phase.END) {
+			if (event.player.ticksExisted % 8 == 0) {
+				snw.sendTo(new HUDSyncMessage(event.player), (EntityPlayerMP) event.player);
+			}
+		}
 	}
 
 	public static Map<DirectionPos, NBTTagCompound> hudelements = new HashMap<>();
@@ -81,38 +101,37 @@ public class HUDLibrary {
 				IHUDProvider pro = new IHUDProvider() {
 
 					@Override
-					public List<IHUDElement> elements(EntityPlayer player, EnumFacing facing) {
-						List<IHUDElement> lis = new ArrayList<>();
-						lis.add(new IHUDElement.HUDText("KI,aIKs", false));
-						lis.add(new IHUDElement.HUDText("KI!!", false));
-						lis.add(new IHUDElement.HUDText("KIsandwichmaker KIgadamn", false));
-						lis.add(new IHUDElement.HUDText("KIlamm", false));
-						lis.add(new IHUDElement.HUDText("KIkuh", false));
-						lis.add(new IHUDElement.HUDText("KIsinus", false));
-						lis.add(new IHUDElement.HUDText("KIdinekl", false));
-						lis.add(new IHUDElement.HUDStack(new ItemStack(Blocks.PLANKS)));
+					public List<HUDElement> elements(EntityPlayer player, EnumFacing facing) {
+						List<HUDElement> lis = new ArrayList<>();
+						lis.add(new HUDElement.HUDText("KI,aIKs", false));
+						//						lis.add(new HUDElement.HUDText("KI!!", false));
+						lis.add(new HUDElement.HUDText("KIsandwichmaker KIgadamn sören", !false));
+						lis.add(new HUDElement.HUDText(".,.,.,.,.,.,", false));
+						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
+						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.IRON_ORE)));
+						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
+						lis.add(new HUDElement.HUDText("KIkuh", false));
+						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
+						lis.add(new HUDElement.HUDText("KIsinus bol", false));
+						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
+						lis.add(new HUDElement.HUDText("Wood", false));
 						return lis;
 					}
 
 					@Override
-					public boolean requireFocus(EntityPlayer player, EnumFacing facing) {
-						return false;
-					}
-
-					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
-						return Color.RED.getRGB();
+						return 0x88AA1144;
 					}
 
 					@Override
 					public Side readingSide() {
-						return IHUDProvider.super.readingSide();
+						return Side.CLIENT;
 					}
 
 					@Override
 					public double totalScale(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 1.;
+							return 1.3;
 						return (MathHelper.sin(player.ticksExisted / 10f) + 2.5) / 2.;
 					}
 
@@ -131,7 +150,12 @@ public class HUDLibrary {
 					public int width(EntityPlayer player, EnumFacing facing) {
 						if (true)
 							return 120;
-						return (int) ((MathHelper.sin(player.ticksExisted / 9f) + 2) * 30);
+						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 40);
+					}
+
+					@Override
+					public int getMargin(Direction dir) {
+						return 9;
 					}
 
 				};
@@ -157,32 +181,30 @@ public class HUDLibrary {
 		try {
 			Minecraft mc = Minecraft.getMinecraft();
 			for (TileEntity t : mc.world.loadedTileEntityList) {
-				if (t.getPos().getDistance((int) mc.player.posX, (int) mc.player.posY, (int) mc.player.posZ) > 24 || !t.hasCapability(HUDCapability.cap, null))
+				if (!t.hasCapability(HUDCapability.cap, null))
 					continue;
 
 				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-				RayTraceResult rtr = mc.objectMouseOver;
 				Vec3d v = new Vec3d(t.getPos().getX() + .5, mc.player.getPositionEyes(0).y, t.getPos().getZ() + .5);
 				v = v.subtract(mc.player.getPositionEyes(0));
 				EnumFacing face = EnumFacing.getFacingFromVector((float) v.x, (float) v.y, (float) v.z);
+				if (!hud.isVisible(mc.player, face.getOpposite(), t))
+					continue;
 				EntityPlayer player = mc.player;
-				if (hud.requireFocus(player, face.getOpposite()) && !(rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos().equals(t.getPos())))
+				//				RayTraceResult rtr = mc.objectMouseOver;
+				//				if (hud.requireFocus(player, face.getOpposite()) && !(rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos().equals(t.getPos())))
+				//					continue;
+				List<HUDElement> elements = hud.elements(player, face.getOpposite());
+				if (elements == null || elements.isEmpty())
 					continue;
+				//				elements.clear();
 
-				List<IHUDElement> elements = hud.elements(player, face.getOpposite());
-				if (elements == null /*|| elements.isEmpty()*/)
-					continue;
-
-				Iterator<IHUDElement> it = elements.iterator();
-				while (it.hasNext()) {
-					IHUDElement e = it.next();
-					if (e == null) {
-						it.remove();
-						continue;
-					}
-					NBTTagCompound nbt = null;
-					if (hud.readingSide().isServer() && (nbt = hudelements.get(new DirectionPos(t.getPos(), face.getOpposite()))) != null) {
-						e.readSyncTag(nbt);
+				NBTTagCompound n = hud.readingSide().isServer() ? hudelements.get(new DirectionPos(t.getPos(), face.getOpposite())) : null;
+				NBTTagList lis = n != null ? (NBTTagList) n.getTag("list") : null;
+				if (lis != null) {
+					Validate.isTrue(elements.size() == lis.tagCount());
+					for (int i = 0; i < elements.size(); i++) {
+						elements.get(i).readSyncTag(lis.getCompoundTagAt(i));
 					}
 				}
 
@@ -200,11 +222,11 @@ public class HUDLibrary {
 				GlStateManager.rotate(f1, 0.0F, 1.0F, 0.0F);
 				GlStateManager.enableRescaleNormal();
 				int size = hud.width(player, face.getOpposite());
+				int effectiveSize = size - hud.getMargin(Direction.LEFT) - hud.getMargin(Direction.RIGHT);
 				float f = 1f / size;
-				int height = elements.stream().mapToInt(e -> e.dimension(size).height).sum();
-				int xx = 2, yy = 2;
-				height += yy;
-				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 2.);
+				int height = elements.stream().mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).sum();
+				height += hud.getMargin(Direction.UP) + hud.getMargin(Direction.DOWN);
+				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 5.);
 				GlStateManager.translate(-.5 * totalScale + hud.offset(player, Axis.HORIZONTAL, face.getOpposite()), //
 						1 * totalScale + hud.offset(player, Axis.VERTICAL, face.getOpposite()), //
 						0 + hud.offset(player, Axis.NORMAL, face.getOpposite()));
@@ -214,17 +236,19 @@ public class HUDLibrary {
 				GlStateManager.scale(totalScale, totalScale, totalScale);
 				int color = hud.getBackgroundColor(player, face.getOpposite());
 				GuiUtils.drawGradientRect(0, 0, size - height, size, size, color, color);
-				//				GlStateManager.translate(3, 0, 0);
-				//				GlStateManager.scale(.5, 1, 1);
-				//				GlStateManager.scale(2, 1, 1);
-				//				GlStateManager.translate(-3, 0, 0);
+				GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), 0xff5555E5, 0xff5555E5);
+				GlStateManager.translate(hud.getMargin(Direction.LEFT), hud.getMargin(Direction.UP), 0);
 				GlStateManager.translate(0, size - height, 0);
 				for (int j = 0; j < elements.size(); ++j) {
-					IHUDElement e = elements.get(j);
-					Dimension d = e.dimension(size);
-					e.draw(xx, yy, size);
-					yy += d.height;
-
+					GlStateManager.depthMask(false);
+					HUDElement e = elements.get(j);
+					int padLeft = e.getPadding(Direction.LEFT), padTop = e.getPadding(Direction.UP), padRight = e.getPadding(Direction.RIGHT), padDown = e.getPadding(Direction.DOWN);
+					Dimension d = e.dimension(effectiveSize - padLeft - padRight);
+					GlStateManager.translate(padLeft, padTop, 0);
+					e.draw(effectiveSize - padLeft - padRight);
+					GlStateManager.translate(-padLeft, padDown, 0);
+					GlStateManager.translate(0, d.height, 0);
+					//					yy += d.height;
 				}
 				//				GlStateManager.scale(1. / factor, 1. / factor, 1. / factor);
 				GlStateManager.scale(1. / totalScale, 1. / totalScale, 1. / totalScale);

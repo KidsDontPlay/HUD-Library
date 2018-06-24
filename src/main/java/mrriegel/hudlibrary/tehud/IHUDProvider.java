@@ -3,6 +3,7 @@ package mrriegel.hudlibrary.tehud;
 import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -20,11 +21,11 @@ public interface IHUDProvider {
 		return 1;
 	}
 
-	default boolean requireFocus(EntityPlayer player, EnumFacing facing) {
-		return true;
+	default boolean isVisible(EntityPlayer player, EnumFacing facing, TileEntity tile) {
+		return tile.getPos().getDistance((int) player.posX, (int) player.posY, (int) player.posZ) <= 24;
 	}
 
-	List<IHUDElement> elements(EntityPlayer player, EnumFacing facing);
+	List<HUDElement> elements(EntityPlayer player, EnumFacing facing);
 
 	default double offset(EntityPlayer player, Axis axis, EnumFacing facing) {
 		return 0;
@@ -34,6 +35,14 @@ public interface IHUDProvider {
 		return 100;
 	}
 
+	default boolean needsSync() {
+		return true;
+	}
+
+	default int getMargin(Direction dir) {
+		return 2;
+	}
+
 	public enum Axis {
 		/** up-down */
 		VERTICAL,
@@ -41,6 +50,10 @@ public interface IHUDProvider {
 		HORIZONTAL,
 		/** front-back */
 		NORMAL;
+	}
+
+	public enum Direction {
+		UP, RIGHT, DOWN, LEFT;
 	}
 
 }
