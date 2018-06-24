@@ -103,14 +103,22 @@ public class HUDLibrary {
 					@Override
 					public List<HUDElement> elements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDElement.HUDText("KI,aIKs", false));
+						lis.add(new HUDElement.HUDText("IIIIIIIIIIII", false));
 						//						lis.add(new HUDElement.HUDText("KI!!", false));
-						lis.add(new HUDElement.HUDText("KIsandwichmaker KIgadamn sören", !false));
-						lis.add(new HUDElement.HUDText(".,.,.,.,.,.,", false));
-						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
-						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.IRON_ORE)));
-						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
+						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
+						lis.add(new HUDElement.HUDText("O0O0O0O0O0O", false));
+						HUDElement[] ar = new HUDElement[3];
+						for (int i = 0; i < ar.length; i++) {
+							if (ar.length / 2 == i)
+								ar[i] = new HUDElement.HUDBar(22, 0x4415353e, 0xe1e95bcd);
+							else
+								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1, i));
+						}
+						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
+						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1, 3)));
+						lis.add(new HUDElement.HUDCompound(ar));
 						lis.add(new HUDElement.HUDText("KIkuh", false));
+						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
 						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
 						lis.add(new HUDElement.HUDText("KIsinus bol", false));
 						lis.add(new HUDElement.HUDText("KIdinekl cool", false));

@@ -47,10 +47,6 @@ public abstract class HUDElement {
 		reader.accept(this, tag);
 	}
 
-	public boolean newLine() {
-		return true;
-	}
-
 	public int getPadding(Direction dir) {
 		return 1;
 	}
@@ -74,13 +70,31 @@ public abstract class HUDElement {
 
 		@Override
 		public void draw(int maxWidth) {
+			int part = maxWidth / elements.length;
+			int back = 0;
+			for (HUDElement e : elements) {
+				GlStateManager.depthMask(false);
+				e.draw(part);
+				int w = e.dimension(part).width;
+				back += w;
+				GlStateManager.translate(w, 0, 0);
+			}
+			GlStateManager.translate(-back, 0, 0);
+		}
 
+		@Override
+		public int getPadding(Direction dir) {
+			if (dir == Direction.LEFT)
+				return elements[0].getPadding(dir);
+			if (dir == Direction.RIGHT)
+				return elements[elements.length - 1].getPadding(dir);
+			return Arrays.stream(elements).mapToInt(e -> e.getPadding(dir)).max().getAsInt();
 		}
 	}
 
 	public static class HUDText extends HUDElement {
 		private String text;
-		private boolean shadow;
+		private boolean shadow, unicode;
 		private final boolean lineBreak;
 		private final FontRenderer fr;
 		private int color = 0xFFCCCCCC;
@@ -100,7 +114,6 @@ public abstract class HUDElement {
 			} else {
 				int width = fr.getStringWidth(text);
 				boolean tooLong = width > maxWidth;
-				//				tooLong = false;
 				double fac = maxWidth / (double) width;
 				return new Dimension(Math.min(width, maxWidth), (int) ((fr.FONT_HEIGHT) * (tooLong ? fac : 1)));
 			}
@@ -116,12 +129,9 @@ public abstract class HUDElement {
 		}
 
 		@Override
-		public boolean newLine() {
-			return lineBreak;
-		}
-
-		@Override
 		public void draw(int maxWidth) {
+			boolean uni = fr.getUnicodeFlag();
+			fr.setUnicodeFlag(unicode);
 			if (lineBreak) {
 				List<String> lis = fr.listFormattedStringToWidth(text, maxWidth);
 				for (int i = 0; i < lis.size(); i++) {
@@ -140,6 +150,7 @@ public abstract class HUDElement {
 					GlStateManager.scale(1 / fac, 1 / fac, 1);
 				}
 			}
+			fr.setUnicodeFlag(uni);
 		}
 
 	}
@@ -161,7 +172,7 @@ public abstract class HUDElement {
 
 		@Override
 		public Dimension dimension(int maxWidth) {
-			return new Dimension(maxWidth + 0, height + 2);
+			return new Dimension(maxWidth, height);
 		}
 
 		@Override
@@ -180,21 +191,16 @@ public abstract class HUDElement {
 		}
 
 		@Override
-		public boolean newLine() {
-			return true;
-		}
-
-		@Override
 		public void draw(int maxWidth) {
 			Color c = new Color(color);
 			c = c.darker();
-			GuiUtils.drawGradientRect(0, 1, 1, maxWidth - 1, height - 1, c.getRGB(), c.getRGB());
-			GuiUtils.drawGradientRect(0, 1, 1, (int) ((maxWidth - 1) * filling), height - 1, color, color);
+			GuiUtils.drawGradientRect(0, 1, 0, maxWidth - 1, height - 2, c.getRGB(), c.getRGB());
+			GuiUtils.drawGradientRect(0, 1, 0, (int) ((maxWidth - 1) * filling), height - 2, color, color);
 			//frame
-			GuiUtils.drawGradientRect(0, 0, 0, 1, height, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, maxWidth - 1, 0, maxWidth, height, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, 1, 0, maxWidth - 1, 1, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, 1, height - 1, maxWidth - 1, height, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, 0, -1, 1, height - 1, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, maxWidth - 1, -1, maxWidth, height - 1, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, 1, -1, maxWidth - 1, 0, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, 1, height - 2, maxWidth - 1, height - 1, frameColor, frameColor);
 		}
 
 	}
@@ -222,16 +228,10 @@ public abstract class HUDElement {
 		}
 
 		@Override
-		public boolean newLine() {
-			return true;
-		}
-
-		@Override
 		public void draw(int maxWidth) {
-			//			GlStateManager.disableLighting();
 			//			RenderHelper.enableStandardItemLighting();
 			RenderHelper.enableGUIStandardItemLighting();
-			int s = 100;
+			int s = 1000;
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			GlStateManager.depthMask(true);
 			GlStateManager.enableLighting();
@@ -249,7 +249,6 @@ public abstract class HUDElement {
 			GlStateManager.popMatrix();
 			GlStateManager.disableLighting();
 			RenderHelper.disableStandardItemLighting();
-			//			GlStateManager.enableLighting();
 		}
 
 	}
