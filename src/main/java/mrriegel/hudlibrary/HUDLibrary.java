@@ -110,20 +110,20 @@ public class HUDLibrary {
 						//						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
 						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 2, 3)));
 						lis.add(new HUDElement.HUDText("O0O0O0O0O0O", false));
-						HUDElement[] ar = new HUDElement[10 - -2];
+						HUDElement[] ar = new HUDElement[10 - -5];
 						for (int i = 0; i < ar.length; i++) {
-							if (0 == i && !false)
-								ar[i] = new HUDElement.HUDBar(16, 0x4415353e, 0xe1e95bcd);
+							if (0 == i && false)
+								ar[i] = new HUDElement.HUDBar(28, 16, 0x4415353e, 0xe1e95bcd);
 							else
-								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1, i));
+								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.STAINED_GLASS, 1 + i, i));
 						}
 						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
 						if (true)
 							lis.add(new HUDElement.HUDCompound(ar));
 						else
-							lis.add(new HUDElement.HUDBar(16, 0x4415353e, 0xe1e95bcd));
+							lis.add(new HUDElement.HUDBar(38, 16, 0x4415353e, 0xe1e95bcd));
 						lis.add(new HUDElement.HUDText("KIkuh", false));
-						//						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
+						lis.add(new HUDElement.HUDBar(50, 8, 0xff13E331, 0xff9b2223));
 						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
 						//						lis.add(new HUDElement.HUDText("KIsinus bol", false));
 						List<HUDElement> list = new ArrayList<>();
@@ -133,8 +133,9 @@ public class HUDLibrary {
 						list.add(0, new HUDElement.HUDText("H", false));
 						//						list.add(new HUDElement.HUDText("moreover far way from chinatown", false));
 						//						list.add(new HUDElement.HUDText("Over nothing else than a shot rose", false));
-						lis.add(new HUDElement.HUDCompound(list));
+						//						lis.add(new HUDElement.HUDCompound(list));
 						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
+						lis.add(new HUDElement.HUDLine());
 						lis.add(new HUDElement.HUDText("Wood", false));
 						return lis;
 					}
@@ -170,7 +171,7 @@ public class HUDLibrary {
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 180;
+							return 80;
 						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 40);
 					}
 
@@ -274,7 +275,7 @@ public class HUDLibrary {
 						offsetX += ((effectiveSize - padLeft - padRight) - d.width) / 2;
 					}
 					GlStateManager.translate(offsetX, padTop, 0);
-					//					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
+					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
 					e.draw(effectiveSize - padLeft - padRight);
 					GlStateManager.translate(-offsetX, padDown, 0);
 					GlStateManager.translate(0, d.height, 0);

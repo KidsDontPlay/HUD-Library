@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -38,9 +40,10 @@ public abstract class HUDElement {
 	protected @Nonnull Alignment align = Alignment.LEFT;
 	protected Int2IntMap padding = new Int2IntOpenHashMap(4);
 	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
+	protected boolean newLine = true;
 
 	protected HUDElement() {
-		padding.defaultReturnValue(2);
+		padding.defaultReturnValue(1);
 	}
 
 	public Alignment getAlignment() {
@@ -67,6 +70,10 @@ public abstract class HUDElement {
 		return this;
 	}
 
+	public boolean isNewLine() {
+		return newLine;
+	}
+
 	/** @return Dimension without padding */
 
 	@Nonnull
@@ -89,7 +96,7 @@ public abstract class HUDElement {
 		public HUDCompound(HUDElement... elements) {
 			super();
 			this.elements = elements;
-			this.lineBreak = false;
+			this.lineBreak = !false;
 			Validate.isTrue(elements != null && elements.length != 0);
 		}
 
@@ -107,7 +114,7 @@ public abstract class HUDElement {
 				int rowWidth = 0;
 				int row = 0, column = 0;
 				for (HUDElement e : elements) {
-					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
+					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width/* + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)*/;
 					if (rowWidth > maxWidth) {
 						row++;
 						rowWidth = 0;
@@ -118,13 +125,14 @@ public abstract class HUDElement {
 				}
 				int totalWidth = 0, totalHeight = 0;
 				for (int x = 0; x < elements.length; x++) {
-					for (int y = 0; y < elements.length; y++) {
-						HUDElement e = grid[x][y];
-						if (e == null)
-							continue;
-						totalWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
-						totalHeight = Math.max(totalHeight, e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN));
-					}
+					totalHeight = Math.max(totalHeight, Arrays.stream(grid[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height).sum());
+				}
+				HUDElement[][] gridNew = new HUDElement[elements.length][elements.length];
+				for (int i = 0; i < elements.length; i++)
+					for (int j = 0; j < elements.length; j++)
+						gridNew[i][j] = grid[j][i];
+				for (int x = 0; x < elements.length; x++) {
+					totalWidth = Math.max(totalWidth, Arrays.stream(gridNew[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width).sum());
 				}
 				d = new Dimension(totalWidth, totalHeight);
 			} else {
@@ -155,6 +163,45 @@ public abstract class HUDElement {
 		@Override
 		public void draw(int maxWidth) {
 			if (lineBreak) {
+				HUDElement[][] grid = new HUDElement[elements.length][elements.length];
+				int rowWidth = 0;
+				int row = 0, column = 0;
+				for (HUDElement e : elements) {
+					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
+					if (rowWidth > maxWidth) {
+						row++;
+						rowWidth = 0;
+						column = 0;
+					}
+					grid[column][row] = e;
+					column++;
+				}
+				HUDElement[][] gridNew = new HUDElement[elements.length][elements.length];
+				for (int i = 0; i < elements.length; i++)
+					for (int j = 0; j < elements.length; j++)
+						gridNew[i][j] = grid[j][i];
+				int last = 0;
+				for (int x = 0; x < elements.length; x++) {
+					int back = 0;
+					for (int y = 0; y < elements.length; y++) {
+						GlStateManager.depthMask(false);
+						HUDElement e = grid[y][x];
+						if (e == null)
+							continue;
+						e.draw(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
+						int w = e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
+						back += w;
+						GlStateManager.translate(w, 0, 0);
+					}
+					GlStateManager.translate(-back, 0, 0);
+					OptionalInt op = Arrays.stream(gridNew[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height).max();
+					//					if (op.isPresent())
+					//						System.out.println(op.getAsInt() + "");
+					if (op.isPresent())
+						GlStateManager.translate(0, last = op.getAsInt(), 0);
+				}
+				GlStateManager.translate(0, -last, 0);
+				//				System.out.println("zip");
 			} else {
 				int width = dimension(maxWidth).width;
 				boolean tooLong = width > maxWidth;
@@ -254,11 +301,12 @@ public abstract class HUDElement {
 
 	public static class HUDBar extends HUDElement {
 
-		private final int height, frameColor, color;
+		private final int width, height, frameColor, color;
 		private double filling;
 
-		public HUDBar(int height, int frameColor, int color) {
+		public HUDBar(int width, int height, int frameColor, int color) {
 			super();
+			this.width = width;
 			this.height = height;
 			this.frameColor = frameColor;
 			this.color = color;
@@ -272,7 +320,7 @@ public abstract class HUDElement {
 			Dimension d = dims.get(maxWidth);
 			if (d != null)
 				return d;
-			d = new Dimension(maxWidth, height);
+			d = new Dimension(width, height);
 			dims.put(maxWidth, d);
 			return d;
 		}
@@ -295,14 +343,21 @@ public abstract class HUDElement {
 		@Override
 		public void draw(int maxWidth) {
 			Color c = new Color(color);
-			c = c.darker();
-			GuiUtils.drawGradientRect(0, 1, 0, maxWidth - 1, height - 2, c.getRGB(), c.getRGB());
-			GuiUtils.drawGradientRect(0, 1, 0, (int) ((maxWidth - 1) * filling), height - 2, color, color);
+			Color background = c.darker();
+			float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
+			hsb[2] += -.1f;
+			int c2 = Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]);
+
+			GuiUtils.drawGradientRect(0, 1, 0, width - 1, height - 2, background.getRGB(), background.getRGB());
+			int del = height - 2;
+			int del1 = del / 2;
+			GuiUtils.drawGradientRect(0, 1, 0, (int) ((width - 1) * filling), del1, c2, color);
+			GuiUtils.drawGradientRect(0, 1, del1, (int) ((width - 1) * filling), del, color, c2);
 			//frame
 			GuiUtils.drawGradientRect(0, 0, -1, 1, height - 1, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, maxWidth - 1, -1, maxWidth, height - 1, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, 1, -1, maxWidth - 1, 0, frameColor, frameColor);
-			GuiUtils.drawGradientRect(0, 1, height - 2, maxWidth - 1, height - 1, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, width - 1, -1, width, height - 1, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, 1, -1, width - 1, 0, frameColor, frameColor);
+			GuiUtils.drawGradientRect(0, 1, height - 2, width - 1, height - 1, frameColor, frameColor);
 		}
 
 	}
@@ -310,6 +365,7 @@ public abstract class HUDElement {
 	public static class HUDStack extends HUDElement {
 		private static final Dimension dim = new Dimension(16, 16);
 		private ItemStack stack;
+		private boolean overlay = true;
 
 		public HUDStack(ItemStack stack) {
 			super();
@@ -345,7 +401,8 @@ public abstract class HUDElement {
 			GlStateManager.scale(1, 1, 1. / s);
 			RenderItem render = Minecraft.getMinecraft().getRenderItem();
 			render.renderItemAndEffectIntoGUI(stack, 0, 0);
-			render.renderItemOverlayIntoGUI(Minecraft.getMinecraft().fontRenderer, stack, 0, 0, null);
+			if (overlay)
+				render.renderItemOverlayIntoGUI(Minecraft.getMinecraft().fontRenderer, stack, 0, 0, null);
 			GlStateManager.scale(1, 1, s);
 			GlStateManager.translate(0, 0, -tr);
 			GlStateManager.popMatrix();
@@ -353,6 +410,33 @@ public abstract class HUDElement {
 			RenderHelper.disableStandardItemLighting();
 		}
 
+	}
+
+	public static class HUDLine extends HUDElement {
+		private int color = 0xFFCCCCCC;
+
+		public HUDLine() {
+		}
+
+		public HUDLine(int color) {
+			super();
+			this.color = color;
+		}
+
+		@Override
+		public Dimension dimension(int maxWidth) {
+			Dimension d = dims.get(maxWidth);
+			if (d != null)
+				return d;
+			d = new Dimension(maxWidth, 1);
+			dims.put(maxWidth, d);
+			return d;
+		}
+
+		@Override
+		public void draw(int maxWidth) {
+			GuiUtils.drawGradientRect(0, 0, 0, maxWidth, 1, color, color);
+		}
 	}
 
 }
