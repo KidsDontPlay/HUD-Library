@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 
+import joptsimple.internal.Strings;
 import mrriegel.hudlibrary.tehud.DirectionPos;
 import mrriegel.hudlibrary.tehud.HUDCapability;
 import mrriegel.hudlibrary.tehud.HUDElement;
@@ -106,22 +107,33 @@ public class HUDLibrary {
 						List<HUDElement> lis = new ArrayList<>();
 						lis.add(new HUDElement.HUDText("IIIIIIIIIIII", false));
 						//						lis.add(new HUDElement.HUDText("KI!!", false));
-						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
+						//						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
+						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 2, 3)));
 						lis.add(new HUDElement.HUDText("O0O0O0O0O0O", false));
-						HUDElement[] ar = new HUDElement[3];
+						HUDElement[] ar = new HUDElement[10 - -2];
 						for (int i = 0; i < ar.length; i++) {
-							if (ar.length / 2 == i)
-								ar[i] = new HUDElement.HUDBar(22, 0x4415353e, 0xe1e95bcd);
+							if (0 == i && !false)
+								ar[i] = new HUDElement.HUDBar(16, 0x4415353e, 0xe1e95bcd);
 							else
 								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1, i));
 						}
 						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
-						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1, 3)));
-						lis.add(new HUDElement.HUDCompound(ar));
+						if (true)
+							lis.add(new HUDElement.HUDCompound(ar));
+						else
+							lis.add(new HUDElement.HUDBar(16, 0x4415353e, 0xe1e95bcd));
 						lis.add(new HUDElement.HUDText("KIkuh", false));
-						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
+						//						lis.add(new HUDElement.HUDBar(8, 0xff13E331, 0xff9b2223));
 						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
-						lis.add(new HUDElement.HUDText("KIsinus bol", false));
+						//						lis.add(new HUDElement.HUDText("KIsinus bol", false));
+						List<HUDElement> list = new ArrayList<>();
+						for (int i = 1; i < 9; i++) {
+							list.add(new HUDElement.HUDText(Strings.repeat('o', i), false));
+						}
+						list.add(0, new HUDElement.HUDText("H", false));
+						//						list.add(new HUDElement.HUDText("moreover far way from chinatown", false));
+						//						list.add(new HUDElement.HUDText("Over nothing else than a shot rose", false));
+						lis.add(new HUDElement.HUDCompound(list));
 						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
 						lis.add(new HUDElement.HUDText("Wood", false));
 						return lis;
@@ -158,7 +170,7 @@ public class HUDLibrary {
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 120;
+							return 180;
 						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 40);
 					}
 
@@ -233,7 +245,9 @@ public class HUDLibrary {
 				int size = hud.width(player, face.getOpposite());
 				int effectiveSize = size - hud.getMargin(Direction.LEFT) - hud.getMargin(Direction.RIGHT);
 				float f = 1f / size;
-				int height = elements.stream().mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).sum();
+				int height = elements.stream().//
+						mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).//
+						sum();
 				height += hud.getMargin(Direction.UP) + hud.getMargin(Direction.DOWN);
 				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 5.);
 				GlStateManager.translate(-.5 * totalScale + hud.offset(player, Axis.HORIZONTAL, face.getOpposite()), //
@@ -260,6 +274,7 @@ public class HUDLibrary {
 						offsetX += ((effectiveSize - padLeft - padRight) - d.width) / 2;
 					}
 					GlStateManager.translate(offsetX, padTop, 0);
+					//					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
 					e.draw(effectiveSize - padLeft - padRight);
 					GlStateManager.translate(-offsetX, padDown, 0);
 					GlStateManager.translate(0, d.height, 0);

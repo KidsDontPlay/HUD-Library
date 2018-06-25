@@ -3,6 +3,7 @@ package mrriegel.hudlibrary.tehud;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -39,7 +40,7 @@ public abstract class HUDElement {
 	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
 
 	protected HUDElement() {
-		padding.defaultReturnValue(1);
+		padding.defaultReturnValue(2);
 	}
 
 	public Alignment getAlignment() {
@@ -83,12 +84,17 @@ public abstract class HUDElement {
 
 	public static class HUDCompound extends HUDElement {
 		protected final HUDElement[] elements;
-		protected boolean breac;
+		protected final boolean lineBreak;
 
-		public HUDCompound(HUDElement[] elements) {
+		public HUDCompound(HUDElement... elements) {
 			super();
 			this.elements = elements;
+			this.lineBreak = false;
 			Validate.isTrue(elements != null && elements.length != 0);
+		}
+
+		public HUDCompound(Collection<HUDElement> lis) {
+			this(lis.toArray(new HUDElement[lis.size()]));
 		}
 
 		@Override
@@ -96,27 +102,88 @@ public abstract class HUDElement {
 			Dimension d = dims.get(maxWidth);
 			if (d != null)
 				return d;
-			int part = maxWidth / elements.length;
-			d = new Dimension(Arrays.stream(elements).mapToInt(e -> e.dimension(part).width).sum(), Arrays.stream(elements).mapToInt(e -> e.dimension(part).height).max().getAsInt());
-			return dims.put(maxWidth, d);
+			if (lineBreak) {
+				HUDElement[][] grid = new HUDElement[elements.length][elements.length];
+				int rowWidth = 0;
+				int row = 0, column = 0;
+				for (HUDElement e : elements) {
+					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
+					if (rowWidth > maxWidth) {
+						row++;
+						rowWidth = 0;
+						column = 0;
+					}
+					grid[column][row] = e;
+					column++;
+				}
+				int totalWidth = 0, totalHeight = 0;
+				for (int x = 0; x < elements.length; x++) {
+					for (int y = 0; y < elements.length; y++) {
+						HUDElement e = grid[x][y];
+						if (e == null)
+							continue;
+						totalWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
+						totalHeight = Math.max(totalHeight, e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN));
+					}
+				}
+				d = new Dimension(totalWidth, totalHeight);
+			} else {
+				int part = maxWidth / elements.length;
+				if (true)
+					part = maxWidth;
+				int totalWidth = 0, totalHeight = 0;
+				for (HUDElement e : elements) {
+					totalWidth += e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
+					totalHeight = Math.max(totalHeight, e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height /*+ e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)*/);
+				}
+				totalWidth -= elements[0].getPadding(Direction.LEFT);
+				totalWidth -= elements[elements.length - 1].getPadding(Direction.RIGHT);
+				int width = totalWidth;
+				boolean tooLong = width > maxWidth;
+				if (tooLong) {
+					double fac = maxWidth / (double) width;
+					totalHeight *= fac;
+				}
+				d = new Dimension(totalWidth, totalHeight);
+				//				if (new Random().nextDouble() < .01)
+				//					System.out.println(elements[0].getClass() + " " + d);
+			}
+			dims.put(maxWidth, d);
+			return d;
 		}
 
 		@Override
 		public void draw(int maxWidth) {
-			int part = maxWidth / elements.length;
-			int back = 0;
-			for (HUDElement e : elements) {
-				GlStateManager.depthMask(false);
-				e.draw(part);
-				int w = e.dimension(part).width;
-				back += w;
-				GlStateManager.translate(w, 0, 0);
+			if (lineBreak) {
+			} else {
+				int width = dimension(maxWidth).width;
+				boolean tooLong = width > maxWidth;
+				double fac = maxWidth / (double) width;
+				if (tooLong) {
+					GlStateManager.scale(fac, fac, 1);
+				}
+				int part = maxWidth / elements.length;
+				if (true)
+					part = maxWidth;
+				int back = 0;
+				for (HUDElement e : elements) {
+					GlStateManager.depthMask(false);
+					e.draw(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
+					int w = e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
+					back += w;
+					GlStateManager.translate(w, 0, 0);
+				}
+				GlStateManager.translate(-back, 0, 0);
+				if (tooLong) {
+					GlStateManager.scale(1 / fac, 1 / fac, 1);
+				}
 			}
-			GlStateManager.translate(-back, 0, 0);
 		}
 
 		@Override
 		public int getPadding(Direction dir) {
+			if (elements != null)
+				return super.getPadding(dir);
 			if (dir == Direction.LEFT)
 				return elements[0].getPadding(dir);
 			if (dir == Direction.RIGHT)
@@ -137,6 +204,7 @@ public abstract class HUDElement {
 			this.text = text;
 			this.lineBreak = lineBreak;
 			this.fr = Minecraft.getMinecraft().fontRenderer;
+			//			this.color = 0xFF443322;
 		}
 
 		@Override
@@ -153,7 +221,8 @@ public abstract class HUDElement {
 				double fac = maxWidth / (double) width;
 				d = new Dimension(Math.min(width, maxWidth), (int) ((fr.FONT_HEIGHT) * (tooLong ? fac : 1)));
 			}
-			return dims.put(maxWidth, d);
+			dims.put(maxWidth, d);
+			return d;
 		}
 
 		@Override
@@ -204,7 +273,8 @@ public abstract class HUDElement {
 			if (d != null)
 				return d;
 			d = new Dimension(maxWidth, height);
-			return dims.put(maxWidth, d);
+			dims.put(maxWidth, d);
+			return d;
 		}
 
 		@Override
@@ -274,9 +344,8 @@ public abstract class HUDElement {
 			GlStateManager.translate(0, 0, tr);
 			GlStateManager.scale(1, 1, 1. / s);
 			RenderItem render = Minecraft.getMinecraft().getRenderItem();
-			//			render.zLevel -= 1600f;
 			render.renderItemAndEffectIntoGUI(stack, 0, 0);
-			//			render.zLevel += 1600f;
+			render.renderItemOverlayIntoGUI(Minecraft.getMinecraft().fontRenderer, stack, 0, 0, null);
 			GlStateManager.scale(1, 1, s);
 			GlStateManager.translate(0, 0, -tr);
 			GlStateManager.popMatrix();
