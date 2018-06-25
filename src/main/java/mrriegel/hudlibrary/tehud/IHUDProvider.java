@@ -54,6 +54,14 @@ public interface IHUDProvider {
 
 	public enum Direction {
 		UP, RIGHT, DOWN, LEFT;
+
+		public boolean isHorizontal() {
+			return this == LEFT || this == RIGHT;
+		}
+
+		public boolean isVertical() {
+			return this == UP || this == DOWN;
+		}
 	}
 
 }

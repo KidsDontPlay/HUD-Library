@@ -11,6 +11,10 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.Validate;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -30,8 +34,36 @@ public abstract class HUDElement {
 	BiConsumer<HUDElement, NBTTagCompound> reader = (h, n) -> {
 	};
 
-	public @Nonnull Alignment alignment() {
+	protected @Nonnull Alignment align = Alignment.LEFT;
+	protected Int2IntMap padding = new Int2IntOpenHashMap(4);
+	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
+
+	protected HUDElement() {
+		padding.defaultReturnValue(1);
+	}
+
+	public Alignment getAlignment() {
 		return Alignment.LEFT;
+	}
+
+	public HUDElement setAlignment(Alignment align) {
+		this.align = align;
+		return this;
+	}
+
+	public int getPadding(Direction dir) {
+		return padding.get(dir.ordinal());
+	}
+
+	public HUDElement setPadding(Direction dir, int padding) {
+		this.padding.put(dir.ordinal(), padding);
+		return this;
+	}
+
+	public HUDElement setPadding(int padding) {
+		for (int i = 0; i < 4; i++)
+			this.padding.put(i, padding);
+		return this;
 	}
 
 	/** @return Dimension without padding */
@@ -47,14 +79,11 @@ public abstract class HUDElement {
 		reader.accept(this, tag);
 	}
 
-	public int getPadding(Direction dir) {
-		return 1;
-	}
-
 	public abstract void draw(int maxWidth);
 
 	public static class HUDCompound extends HUDElement {
-		private final HUDElement[] elements;
+		protected final HUDElement[] elements;
+		protected boolean breac;
 
 		public HUDCompound(HUDElement[] elements) {
 			super();
@@ -64,8 +93,12 @@ public abstract class HUDElement {
 
 		@Override
 		public Dimension dimension(int maxWidth) {
+			Dimension d = dims.get(maxWidth);
+			if (d != null)
+				return d;
 			int part = maxWidth / elements.length;
-			return new Dimension(Arrays.stream(elements).mapToInt(e -> e.dimension(part).width).sum(), Arrays.stream(elements).mapToInt(e -> e.dimension(part).height).max().getAsInt());
+			d = new Dimension(Arrays.stream(elements).mapToInt(e -> e.dimension(part).width).sum(), Arrays.stream(elements).mapToInt(e -> e.dimension(part).height).max().getAsInt());
+			return dims.put(maxWidth, d);
 		}
 
 		@Override
@@ -108,24 +141,19 @@ public abstract class HUDElement {
 
 		@Override
 		public Dimension dimension(int maxWidth) {
+			Dimension d = dims.get(maxWidth);
+			if (d != null)
+				return d;
 			if (lineBreak) {
 				List<String> lis = fr.listFormattedStringToWidth(text, maxWidth);
-				return new Dimension(lis.stream().mapToInt(s -> fr.getStringWidth(s)).max().getAsInt(), lis.size() * (fr.FONT_HEIGHT));
+				d = new Dimension(lis.stream().mapToInt(s -> fr.getStringWidth(s)).max().getAsInt(), lis.size() * (fr.FONT_HEIGHT));
 			} else {
 				int width = fr.getStringWidth(text);
 				boolean tooLong = width > maxWidth;
 				double fac = maxWidth / (double) width;
-				return new Dimension(Math.min(width, maxWidth), (int) ((fr.FONT_HEIGHT) * (tooLong ? fac : 1)));
+				d = new Dimension(Math.min(width, maxWidth), (int) ((fr.FONT_HEIGHT) * (tooLong ? fac : 1)));
 			}
-		}
-
-		@Override
-		public NBTTagCompound writeSyncTag(TileEntity tile) {
-			return super.writeSyncTag(tile);
-		}
-
-		@Override
-		public void readSyncTag(NBTTagCompound tag) {
+			return dims.put(maxWidth, d);
 		}
 
 		@Override
@@ -172,7 +200,11 @@ public abstract class HUDElement {
 
 		@Override
 		public Dimension dimension(int maxWidth) {
-			return new Dimension(maxWidth, height);
+			Dimension d = dims.get(maxWidth);
+			if (d != null)
+				return d;
+			d = new Dimension(maxWidth, height);
+			return dims.put(maxWidth, d);
 		}
 
 		@Override
@@ -206,6 +238,7 @@ public abstract class HUDElement {
 	}
 
 	public static class HUDStack extends HUDElement {
+		private static final Dimension dim = new Dimension(16, 16);
 		private ItemStack stack;
 
 		public HUDStack(ItemStack stack) {
@@ -215,7 +248,7 @@ public abstract class HUDElement {
 
 		@Override
 		public Dimension dimension(int maxWidth) {
-			return new Dimension(16, 16);
+			return dim;
 		}
 
 		@Override

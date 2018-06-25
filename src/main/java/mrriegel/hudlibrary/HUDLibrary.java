@@ -37,6 +37,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod;
@@ -252,9 +253,15 @@ public class HUDLibrary {
 					HUDElement e = elements.get(j);
 					int padLeft = e.getPadding(Direction.LEFT), padTop = e.getPadding(Direction.UP), padRight = e.getPadding(Direction.RIGHT), padDown = e.getPadding(Direction.DOWN);
 					Dimension d = e.dimension(effectiveSize - padLeft - padRight);
-					GlStateManager.translate(padLeft, padTop, 0);
+					int offsetX = padLeft;
+					if (e.getAlignment() == Alignment.RIGHT)
+						offsetX += ((effectiveSize - padLeft - padRight) - d.width);
+					else if (e.getAlignment() == Alignment.CENTER) {
+						offsetX += ((effectiveSize - padLeft - padRight) - d.width) / 2;
+					}
+					GlStateManager.translate(offsetX, padTop, 0);
 					e.draw(effectiveSize - padLeft - padRight);
-					GlStateManager.translate(-padLeft, padDown, 0);
+					GlStateManager.translate(-offsetX, padDown, 0);
 					GlStateManager.translate(0, d.height, 0);
 					//					yy += d.height;
 				}
