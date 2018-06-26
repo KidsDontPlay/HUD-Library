@@ -24,6 +24,7 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
@@ -108,22 +109,27 @@ public class HUDLibrary {
 						lis.add(new HUDElement.HUDText("IIIIIIIIIIII", false));
 						//						lis.add(new HUDElement.HUDText("KI!!", false));
 						//						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
-						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 2, 3)));
-						lis.add(new HUDElement.HUDText("O0O0O0O0O0O", false));
-						HUDElement[] ar = new HUDElement[10 - -5];
+						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.EMERALD_BLOCK)));
+						lis.add(new HUDElement.HUDText("O0O0O0O0O0O minusbereich ...", false));
+						HUDElement[] ar = new HUDElement[10 - -2];
 						for (int i = 0; i < ar.length; i++) {
-							if (0 == i && false)
+							if (6 == i && false) {
 								ar[i] = new HUDElement.HUDBar(28, 16, 0x4415353e, 0xe1e95bcd);
-							else
-								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.STAINED_GLASS, 1 + i, i));
+								List<HUDElement> stacks = new ArrayList<>();
+								stacks.add(new HUDElement.HUDStack(new ItemStack(Items.REDSTONE)));
+								stacks.add(new HUDElement.HUDStack(new ItemStack(Blocks.WATERLILY)));
+								stacks.add(new HUDElement.HUDStack(new ItemStack(Items.GLOWSTONE_DUST)));
+								ar[i] = new HUDElement.HUDCompound(true, stacks);
+							} else
+								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1 + i, i));
 						}
 						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
 						if (true)
-							lis.add(new HUDElement.HUDCompound(ar));
+							lis.add(new HUDElement.HUDCompound(true, ar));
 						else
 							lis.add(new HUDElement.HUDBar(38, 16, 0x4415353e, 0xe1e95bcd));
 						lis.add(new HUDElement.HUDText("KIkuh", false));
-						lis.add(new HUDElement.HUDBar(50, 8, 0xff13E331, 0xff9b2223));
+						lis.add(new HUDElement.HUDBar(50, 8, 0xff232321, 0xff9b2223));
 						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
 						//						lis.add(new HUDElement.HUDText("KIsinus bol", false));
 						List<HUDElement> list = new ArrayList<>();
@@ -131,12 +137,14 @@ public class HUDLibrary {
 							list.add(new HUDElement.HUDText(Strings.repeat('o', i), false));
 						}
 						list.add(0, new HUDElement.HUDText("H", false));
-						//						list.add(new HUDElement.HUDText("moreover far way from chinatown", false));
-						//						list.add(new HUDElement.HUDText("Over nothing else than a shot rose", false));
-						//						lis.add(new HUDElement.HUDCompound(list));
-						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
-						lis.add(new HUDElement.HUDLine());
-						lis.add(new HUDElement.HUDText("Wood", false));
+						list.add(new HUDElement.HUDText("moreover far way from chinatown", false));
+						list.add(new HUDElement.HUDText("Over nothing else than a shot rose", false));
+
+						lis.add(new HUDElement.HUDCompound(true, list));
+
+						//						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
+						//						lis.add(new HUDElement.HUDLine());
+						//						lis.add(new HUDElement.HUDText("Wood", false));
 						return lis;
 					}
 
@@ -152,8 +160,8 @@ public class HUDLibrary {
 
 					@Override
 					public double totalScale(EntityPlayer player, EnumFacing facing) {
-						if (true)
-							return 1.3;
+						if (!true)
+							return 1.3 * 2;
 						return (MathHelper.sin(player.ticksExisted / 10f) + 2.5) / 2.;
 					}
 
@@ -170,9 +178,9 @@ public class HUDLibrary {
 
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
-						if (true)
-							return 80;
-						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 40);
+						if (!true)
+							return 120 * 2;
+						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 50);
 					}
 
 					@Override
@@ -246,9 +254,7 @@ public class HUDLibrary {
 				int size = hud.width(player, face.getOpposite());
 				int effectiveSize = size - hud.getMargin(Direction.LEFT) - hud.getMargin(Direction.RIGHT);
 				float f = 1f / size;
-				int height = elements.stream().//
-						mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).//
-						sum();
+				int height = elements.stream().mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).sum();
 				height += hud.getMargin(Direction.UP) + hud.getMargin(Direction.DOWN);
 				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 5.);
 				GlStateManager.translate(-.5 * totalScale + hud.offset(player, Axis.HORIZONTAL, face.getOpposite()), //
@@ -275,7 +281,7 @@ public class HUDLibrary {
 						offsetX += ((effectiveSize - padLeft - padRight) - d.width) / 2;
 					}
 					GlStateManager.translate(offsetX, padTop, 0);
-					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
+					//					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
 					e.draw(effectiveSize - padLeft - padRight);
 					GlStateManager.translate(-offsetX, padDown, 0);
 					GlStateManager.translate(0, d.height, 0);

@@ -2,17 +2,18 @@ package mrriegel.hudlibrary.tehud;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.Validate;
+
+import com.google.common.collect.Lists;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -27,7 +28,6 @@ import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
@@ -40,7 +40,6 @@ public abstract class HUDElement {
 	protected @Nonnull Alignment align = Alignment.LEFT;
 	protected Int2IntMap padding = new Int2IntOpenHashMap(4);
 	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
-	protected boolean newLine = true;
 
 	protected HUDElement() {
 		padding.defaultReturnValue(1);
@@ -59,6 +58,14 @@ public abstract class HUDElement {
 		return padding.get(dir.ordinal());
 	}
 
+	public final int getPaddingHorizontal() {
+		return getPadding(Direction.LEFT) + getPadding(Direction.RIGHT);
+	}
+
+	public final int getPaddingVertical() {
+		return getPadding(Direction.UP) + getPadding(Direction.DOWN);
+	}
+
 	public HUDElement setPadding(Direction dir, int padding) {
 		this.padding.put(dir.ordinal(), padding);
 		return this;
@@ -68,10 +75,6 @@ public abstract class HUDElement {
 		for (int i = 0; i < 4; i++)
 			this.padding.put(i, padding);
 		return this;
-	}
-
-	public boolean isNewLine() {
-		return newLine;
 	}
 
 	/** @return Dimension without padding */
@@ -93,15 +96,34 @@ public abstract class HUDElement {
 		protected final HUDElement[] elements;
 		protected final boolean lineBreak;
 
-		public HUDCompound(HUDElement... elements) {
+		public HUDCompound(boolean lineBreak, HUDElement... elements) {
 			super();
 			this.elements = elements;
-			this.lineBreak = !false;
+			this.lineBreak = lineBreak;
 			Validate.isTrue(elements != null && elements.length != 0);
 		}
 
-		public HUDCompound(Collection<HUDElement> lis) {
-			this(lis.toArray(new HUDElement[lis.size()]));
+		public HUDCompound(boolean lineBreak, Collection<HUDElement> lis) {
+			this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
+		}
+
+		private List<List<HUDElement>> getElementRows(int maxWidth) {
+			List<List<HUDElement>> lines = new ArrayList<>();
+			List<HUDElement> line = new ArrayList<>();
+			List<HUDElement> ls = Lists.newArrayList(elements);
+			while (!ls.isEmpty()) {
+				HUDElement el = ls.remove(0);
+				int width = el.dimension(maxWidth - el.getPadding(Direction.LEFT) - el.getPadding(Direction.RIGHT)).width + el.getPadding(Direction.LEFT) + el.getPadding(Direction.RIGHT);
+				if (maxWidth < line.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)).sum() + width) {
+					lines.add(new ArrayList<>(line));
+					line.clear();
+					line.add(el);
+				} else
+					line.add(el);
+			}
+			if (!line.isEmpty())
+				lines.add(new ArrayList<>(line));
+			return lines;
 		}
 
 		@Override
@@ -110,42 +132,23 @@ public abstract class HUDElement {
 			if (d != null)
 				return d;
 			if (lineBreak) {
-				HUDElement[][] grid = new HUDElement[elements.length][elements.length];
-				int rowWidth = 0;
-				int row = 0, column = 0;
-				for (HUDElement e : elements) {
-					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width/* + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)*/;
-					if (rowWidth > maxWidth) {
-						row++;
-						rowWidth = 0;
-						column = 0;
-					}
-					grid[column][row] = e;
-					column++;
-				}
 				int totalWidth = 0, totalHeight = 0;
-				for (int x = 0; x < elements.length; x++) {
-					totalHeight = Math.max(totalHeight, Arrays.stream(grid[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height).sum());
-				}
-				HUDElement[][] gridNew = new HUDElement[elements.length][elements.length];
-				for (int i = 0; i < elements.length; i++)
-					for (int j = 0; j < elements.length; j++)
-						gridNew[i][j] = grid[j][i];
-				for (int x = 0; x < elements.length; x++) {
-					totalWidth = Math.max(totalWidth, Arrays.stream(gridNew[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width).sum());
+				for (List<HUDElement> l : getElementRows(maxWidth)) {
+					totalWidth = Math.max(totalWidth, l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)).sum());
+					totalHeight += l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)).max().getAsInt();
 				}
 				d = new Dimension(totalWidth, totalHeight);
 			} else {
 				int part = maxWidth / elements.length;
-				if (true)
+				if (!true)
 					part = maxWidth;
 				int totalWidth = 0, totalHeight = 0;
 				for (HUDElement e : elements) {
 					totalWidth += e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
-					totalHeight = Math.max(totalHeight, e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height /*+ e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)*/);
+					totalHeight = Math.max(totalHeight, e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN));
 				}
-				totalWidth -= elements[0].getPadding(Direction.LEFT);
-				totalWidth -= elements[elements.length - 1].getPadding(Direction.RIGHT);
+				//				totalWidth -= elements[0].getPadding(Direction.LEFT);
+				//				totalWidth -= elements[elements.length - 1].getPadding(Direction.RIGHT);
 				int width = totalWidth;
 				boolean tooLong = width > maxWidth;
 				if (tooLong) {
@@ -163,45 +166,35 @@ public abstract class HUDElement {
 		@Override
 		public void draw(int maxWidth) {
 			if (lineBreak) {
-				HUDElement[][] grid = new HUDElement[elements.length][elements.length];
-				int rowWidth = 0;
-				int row = 0, column = 0;
-				for (HUDElement e : elements) {
-					rowWidth += e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width;
-					if (rowWidth > maxWidth) {
-						row++;
-						rowWidth = 0;
-						column = 0;
+				int hei = 0;
+				boolean firstH = true;
+				for (List<HUDElement> l : getElementRows(maxWidth)) {
+					int down = 0;
+					if (firstH) {
+						firstH = false;
+						GlStateManager.translate(0, down = l.stream().mapToInt(e -> e.getPadding(Direction.UP)).max().getAsInt(), 0);
 					}
-					grid[column][row] = e;
-					column++;
-				}
-				HUDElement[][] gridNew = new HUDElement[elements.length][elements.length];
-				for (int i = 0; i < elements.length; i++)
-					for (int j = 0; j < elements.length; j++)
-						gridNew[i][j] = grid[j][i];
-				int last = 0;
-				for (int x = 0; x < elements.length; x++) {
 					int back = 0;
-					for (int y = 0; y < elements.length; y++) {
+					boolean firstW = true;
+					for (HUDElement e : l) {
 						GlStateManager.depthMask(false);
-						HUDElement e = grid[y][x];
-						if (e == null)
-							continue;
-						e.draw(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
+						if (firstW) {
+							firstW = false;
+							int pad = e.getPadding(Direction.LEFT);
+							back += pad;
+							GlStateManager.translate(pad, 0, 0);
+						}
 						int w = e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
 						back += w;
+						e.draw(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
 						GlStateManager.translate(w, 0, 0);
 					}
+					int h = l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).max().getAsInt();
+					hei += h;
+					GlStateManager.translate(0, h - down, 0);
 					GlStateManager.translate(-back, 0, 0);
-					OptionalInt op = Arrays.stream(gridNew[x]).filter(Objects::nonNull).mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height).max();
-					//					if (op.isPresent())
-					//						System.out.println(op.getAsInt() + "");
-					if (op.isPresent())
-						GlStateManager.translate(0, last = op.getAsInt(), 0);
 				}
-				GlStateManager.translate(0, -last, 0);
-				//				System.out.println("zip");
+				GlStateManager.translate(0, -hei, 0);
 			} else {
 				int width = dimension(maxWidth).width;
 				boolean tooLong = width > maxWidth;
@@ -210,16 +203,27 @@ public abstract class HUDElement {
 					GlStateManager.scale(fac, fac, 1);
 				}
 				int part = maxWidth / elements.length;
-				if (true)
+				if (!true)
 					part = maxWidth;
+				int down = 0;
+				GlStateManager.translate(0, down = Arrays.stream(elements).mapToInt(e -> e.getPadding(Direction.UP)).max().getAsInt(), 0);
 				int back = 0;
+				boolean first = true;
 				for (HUDElement e : elements) {
 					GlStateManager.depthMask(false);
+					if (first) {
+						first = false;
+						int pad = e.getPadding(Direction.LEFT);
+						back += pad;
+						GlStateManager.translate(pad, 0, 0);
+					}
 					e.draw(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
 					int w = e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
 					back += w;
+
 					GlStateManager.translate(w, 0, 0);
 				}
+				GlStateManager.translate(0, -down, 0);
 				GlStateManager.translate(-back, 0, 0);
 				if (tooLong) {
 					GlStateManager.scale(1 / fac, 1 / fac, 1);
@@ -229,13 +233,7 @@ public abstract class HUDElement {
 
 		@Override
 		public int getPadding(Direction dir) {
-			if (elements != null)
-				return super.getPadding(dir);
-			if (dir == Direction.LEFT)
-				return elements[0].getPadding(dir);
-			if (dir == Direction.RIGHT)
-				return elements[elements.length - 1].getPadding(dir);
-			return Arrays.stream(elements).mapToInt(e -> e.getPadding(dir)).max().getAsInt();
+			return super.getPadding(dir);
 		}
 	}
 
@@ -325,20 +323,20 @@ public abstract class HUDElement {
 			return d;
 		}
 
-		@Override
-		public NBTTagCompound writeSyncTag(TileEntity tile) {
-			NBTTagCompound n = new NBTTagCompound();
-			if (tile instanceof TileEntityFurnace) {
-				TileEntityFurnace t = (TileEntityFurnace) tile;
-				n.setDouble("fill", t.getField(0) / (double) t.getField(1));
-			}
-			return n;
-		}
-
-		@Override
-		public void readSyncTag(NBTTagCompound tag) {
-			filling = tag.getDouble("fill");
-		}
+		//		@Override
+		//		public NBTTagCompound writeSyncTag(TileEntity tile) {
+		//			NBTTagCompound n = new NBTTagCompound();
+		//			if (tile instanceof TileEntityFurnace) {
+		//				TileEntityFurnace t = (TileEntityFurnace) tile;
+		//				n.setDouble("fill", t.getField(0) / (double) t.getField(1));
+		//			}
+		//			return n;
+		//		}
+		//
+		//		@Override
+		//		public void readSyncTag(NBTTagCompound tag) {
+		//			filling = tag.getDouble("fill");
+		//		}
 
 		@Override
 		public void draw(int maxWidth) {
@@ -401,6 +399,7 @@ public abstract class HUDElement {
 			GlStateManager.scale(1, 1, 1. / s);
 			RenderItem render = Minecraft.getMinecraft().getRenderItem();
 			render.renderItemAndEffectIntoGUI(stack, 0, 0);
+			//			render.renderItem(stack, TransformType.GUI);
 			if (overlay)
 				render.renderItemOverlayIntoGUI(Minecraft.getMinecraft().fontRenderer, stack, 0, 0, null);
 			GlStateManager.scale(1, 1, s);
