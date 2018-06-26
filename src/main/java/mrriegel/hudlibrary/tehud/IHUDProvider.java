@@ -2,6 +2,7 @@ package mrriegel.hudlibrary.tehud;
 
 import java.util.List;
 
+import mrriegel.hudlibrary.tehud.element.HUDElement;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;

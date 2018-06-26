@@ -13,11 +13,15 @@ import org.apache.commons.lang3.Validate;
 import joptsimple.internal.Strings;
 import mrriegel.hudlibrary.tehud.DirectionPos;
 import mrriegel.hudlibrary.tehud.HUDCapability;
-import mrriegel.hudlibrary.tehud.HUDElement;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Axis;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
+import mrriegel.hudlibrary.tehud.element.HUDCompound;
+import mrriegel.hudlibrary.tehud.element.HUDElement;
+import mrriegel.hudlibrary.tehud.element.HUDItemStack;
+import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
+import mrriegel.hudlibrary.tehud.element.HUDText;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
@@ -106,45 +110,45 @@ public class HUDLibrary {
 					@Override
 					public List<HUDElement> elements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDElement.HUDText("IIIIIIIIIIII", false));
-						//						lis.add(new HUDElement.HUDText("KI!!", false));
-						//						lis.add(new HUDElement.HUDText("KIsandwichm salamander nuss risesn soapß", false));
-						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.EMERALD_BLOCK)));
-						lis.add(new HUDElement.HUDText("O0O0O0O0O0O minusbereich ...", false));
+						lis.add(new HUDText("IIIIIIIIIIII", false));
+						//						lis.add(new HUDText("KI!!", false));
+						//						lis.add(new HUDText("KIsandwichm salamander nuss risesn soapß", false));
+						lis.add(new HUDItemStack(new ItemStack(Blocks.EMERALD_BLOCK)));
+						lis.add(new HUDText("O0O0O0O0O0O minusbereich ...", false));
 						HUDElement[] ar = new HUDElement[10 - -2];
 						for (int i = 0; i < ar.length; i++) {
 							if (6 == i && false) {
-								ar[i] = new HUDElement.HUDBar(28, 16, 0x4415353e, 0xe1e95bcd);
+								ar[i] = new HUDProgressBar(28, 16, 0x4415353e, 0xe1e95bcd);
 								List<HUDElement> stacks = new ArrayList<>();
-								stacks.add(new HUDElement.HUDStack(new ItemStack(Items.REDSTONE)));
-								stacks.add(new HUDElement.HUDStack(new ItemStack(Blocks.WATERLILY)));
-								stacks.add(new HUDElement.HUDStack(new ItemStack(Items.GLOWSTONE_DUST)));
-								ar[i] = new HUDElement.HUDCompound(true, stacks);
+								stacks.add(new HUDItemStack(new ItemStack(Items.REDSTONE)));
+								stacks.add(new HUDItemStack(new ItemStack(Blocks.WATERLILY)));
+								stacks.add(new HUDItemStack(new ItemStack(Items.GLOWSTONE_DUST)));
+								ar[i] = new HUDCompound(true, stacks);
 							} else
-								ar[i] = new HUDElement.HUDStack(new ItemStack(Blocks.WOOL, 1 + i, i));
+								ar[i] = new HUDItemStack(new ItemStack(Blocks.WOOL, 1 + i, i));
 						}
-						//						lis.add(new HUDElement.HUDStack(new ItemStack(Blocks.CHEST)));
+						//						lis.add(new HUDItemStack(new ItemStack(Blocks.CHEST)));
 						if (true)
-							lis.add(new HUDElement.HUDCompound(true, ar));
+							lis.add(new HUDCompound(true, ar));
 						else
-							lis.add(new HUDElement.HUDBar(38, 16, 0x4415353e, 0xe1e95bcd));
-						lis.add(new HUDElement.HUDText("KIkuh", false));
-						lis.add(new HUDElement.HUDBar(50, 8, 0xff232321, 0xff9b2223));
-						//						lis.add(new HUDElement.HUDText("KIlamm kohle rosenmann ", false));
-						//						lis.add(new HUDElement.HUDText("KIsinus bol", false));
+							lis.add(new HUDProgressBar(38, 16, 0x4415353e, 0xe1e95bcd));
+						lis.add(new HUDText("KIkuh", false));
+						lis.add(new HUDProgressBar(50, 8, 0xff232321, 0xff9b2223));
+						//						lis.add(new HUDText("KIlamm kohle rosenmann ", false));
+						//						lis.add(new HUDText("KIsinus bol", false));
 						List<HUDElement> list = new ArrayList<>();
 						for (int i = 1; i < 9; i++) {
-							list.add(new HUDElement.HUDText(Strings.repeat('o', i), false));
+							list.add(new HUDText(Strings.repeat('o', i), false));
 						}
-						list.add(0, new HUDElement.HUDText("H", false));
-						list.add(new HUDElement.HUDText("moreover far way from chinatown", false));
-						list.add(new HUDElement.HUDText("Over nothing else than a shot rose", false));
+						list.add(0, new HUDText("H", false));
+						list.add(new HUDText("moreover far way from chinatown", false));
+						list.add(new HUDText("Over nothing else than a shot rose", false));
 
-						lis.add(new HUDElement.HUDCompound(true, list));
+						lis.add(new HUDCompound(true, list));
 
-						//						lis.add(new HUDElement.HUDText("KIdinekl cool", false));
-						//						lis.add(new HUDElement.HUDLine());
-						//						lis.add(new HUDElement.HUDText("Wood", false));
+						//						lis.add(new HUDText("KIdinekl cool", false));
+						//						lis.add(new HUDLine());
+						//						lis.add(new HUDText("Wood", false));
 						return lis;
 					}
 
@@ -227,7 +231,6 @@ public class HUDLibrary {
 				List<HUDElement> elements = hud.elements(player, face.getOpposite());
 				if (elements == null || elements.isEmpty())
 					continue;
-				//				elements.clear();
 
 				NBTTagCompound n = hud.readingSide().isServer() ? hudelements.get(new DirectionPos(t.getPos(), face.getOpposite())) : null;
 				NBTTagList lis = n != null ? (NBTTagList) n.getTag("list") : null;

@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import io.netty.buffer.ByteBuf;
 import mrriegel.hudlibrary.HUDLibrary;
+import mrriegel.hudlibrary.tehud.element.HUDElement;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
