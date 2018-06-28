@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 
 public class HUDCompound extends HUDElement {
 	protected final HUDElement[] elements;
@@ -26,6 +28,19 @@ public class HUDCompound extends HUDElement {
 
 	public HUDCompound(boolean lineBreak, Collection<HUDElement> lis) {
 		this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
+	}
+
+	@Override
+	public void readSyncTag(NBTTagCompound tag) {
+		if (tag.hasKey("elements")) {
+			NBTTagList list = tag.getTagList("elements", 10);
+			Validate.isTrue(elements.length == list.tagCount());
+			for (int i = 0; i < elements.length; i++) {
+				HUDElement h = elements[i];
+				NBTTagCompound nbt = list.getCompoundTagAt(i);
+				h.readSyncTag(nbt);
+			}
+		}
 	}
 
 	private List<List<HUDElement>> getElementRows(int maxWidth) {
@@ -44,6 +59,7 @@ public class HUDCompound extends HUDElement {
 		}
 		if (!line.isEmpty())
 			lines.add(new ArrayList<>(line));
+		lines.removeIf(List::isEmpty);
 		return lines;
 	}
 
@@ -61,7 +77,7 @@ public class HUDCompound extends HUDElement {
 			d = new Dimension(totalWidth, totalHeight);
 		} else {
 			int part = maxWidth / elements.length;
-			if (!true)
+			if (true)
 				part = maxWidth;
 			int totalWidth = 0, totalHeight = 0;
 			for (HUDElement e : elements) {
@@ -124,7 +140,7 @@ public class HUDCompound extends HUDElement {
 				GlStateManager.scale(fac, fac, 1);
 			}
 			int part = maxWidth / elements.length;
-			if (!true)
+			if (true)
 				part = maxWidth;
 			int down = 0;
 			GlStateManager.translate(0, down = Arrays.stream(elements).mapToInt(e -> e.getPadding(Direction.UP)).max().getAsInt(), 0);
@@ -152,8 +168,4 @@ public class HUDCompound extends HUDElement {
 		}
 	}
 
-	@Override
-	public int getPadding(Direction dir) {
-		return super.getPadding(dir);
-	}
 }

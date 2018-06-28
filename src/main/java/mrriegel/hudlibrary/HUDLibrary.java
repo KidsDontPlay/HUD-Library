@@ -1,51 +1,34 @@
 package mrriegel.hudlibrary;
 
-import java.awt.Dimension;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.Validate;
+import java.util.function.Function;
 
 import joptsimple.internal.Strings;
-import mrriegel.hudlibrary.tehud.DirectionPos;
 import mrriegel.hudlibrary.tehud.HUDCapability;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
-import mrriegel.hudlibrary.tehud.IHUDProvider.Axis;
-import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
+import mrriegel.hudlibrary.tehud.element.HUDLine;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -86,7 +69,7 @@ public class HUDLibrary {
 	}
 
 	@EventHandler
-	public void postInit(FMLPostInitializationEvent event) throws IOException {
+	public void postInit(FMLPostInitializationEvent event) {
 	}
 
 	@SubscribeEvent
@@ -98,41 +81,40 @@ public class HUDLibrary {
 		}
 	}
 
-	public static Map<DirectionPos, NBTTagCompound> hudelements = new HashMap<>();
-
 	@SubscribeEvent
 	public static void attach(AttachCapabilitiesEvent<TileEntity> event) {
 		if (dev && event.getObject() instanceof TileEntityFurnace) {
 			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
 				TileEntityFurnace tile = (TileEntityFurnace) event.getObject();
 				IHUDProvider pro = new IHUDProvider() {
+					List<HUDElement> ls = null;
+					long time = 0;
 
 					@Override
-					public List<HUDElement> elements(EntityPlayer player, EnumFacing facing) {
+					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
+						if (System.currentTimeMillis() - time > 1000 || true) {
+							ls = null;
+							time = System.currentTimeMillis();
+						}
+						if (ls != null)
+							return ls;
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDText("IIIIIIIIIIII", false));
+						lis.add(new HUDText("Facing: " + (player.isSneaking() ? facing.toString().toUpperCase() : facing), false));
 						//						lis.add(new HUDText("KI!!", false));
 						//						lis.add(new HUDText("KIsandwichm salamander nuss risesn soapß", false));
-						lis.add(new HUDItemStack(new ItemStack(Blocks.EMERALD_BLOCK)));
-						lis.add(new HUDText("O0O0O0O0O0O minusbereich ...", false));
+						lis.add(new HUDItemStack(ItemStack.EMPTY));
+						lis.add(new HUDProgressBar(78, 16, 0x4415353e, 0xe1e95bcd));
+						lis.add(new HUDItemStack(ItemStack.EMPTY));
 						HUDElement[] ar = new HUDElement[10 - -2];
 						for (int i = 0; i < ar.length; i++) {
-							if (6 == i && false) {
-								ar[i] = new HUDProgressBar(28, 16, 0x4415353e, 0xe1e95bcd);
-								List<HUDElement> stacks = new ArrayList<>();
-								stacks.add(new HUDItemStack(new ItemStack(Items.REDSTONE)));
-								stacks.add(new HUDItemStack(new ItemStack(Blocks.WATERLILY)));
-								stacks.add(new HUDItemStack(new ItemStack(Items.GLOWSTONE_DUST)));
-								ar[i] = new HUDCompound(true, stacks);
-							} else
-								ar[i] = new HUDItemStack(new ItemStack(Blocks.WOOL, 1 + i, i));
+							ar[i] = new HUDItemStack(new ItemStack(Blocks.WOOL, 1 + i, i));
 						}
 						//						lis.add(new HUDItemStack(new ItemStack(Blocks.CHEST)));
 						if (true)
 							lis.add(new HUDCompound(true, ar));
 						else
 							lis.add(new HUDProgressBar(38, 16, 0x4415353e, 0xe1e95bcd));
-						lis.add(new HUDText("KIkuh", false));
+						lis.add(new HUDLine());
 						lis.add(new HUDProgressBar(50, 8, 0xff232321, 0xff9b2223));
 						//						lis.add(new HUDText("KIlamm kohle rosenmann ", false));
 						//						lis.add(new HUDText("KIsinus bol", false));
@@ -144,11 +126,37 @@ public class HUDLibrary {
 						list.add(new HUDText("moreover far way from chinatown", false));
 						list.add(new HUDText("Over nothing else than a shot rose", false));
 
-						lis.add(new HUDCompound(true, list));
+						if (false)
+							lis.add(new HUDCompound(true, list));
 
 						//						lis.add(new HUDText("KIdinekl cool", false));
-						//						lis.add(new HUDLine());
 						//						lis.add(new HUDText("Wood", false));
+						//						Collections.shuffle(lis, new Random(facing.getName2().hashCode()));
+						return ls = lis;
+					}
+
+					@Override
+					public List<Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						List<Function<TileEntity, NBTTagCompound>> lis = new ArrayList<>();
+						lis.add(t -> null);
+						lis.add(t -> {
+							TileEntityFurnace tile = (TileEntityFurnace) t;
+							NBTTagCompound nbt = new NBTTagCompound();
+							nbt.setTag("stack", tile.getStackInSlot(0).writeToNBT(new NBTTagCompound()));
+							return nbt;
+						});
+						lis.add(t -> {
+							TileEntityFurnace tile = (TileEntityFurnace) t;
+							NBTTagCompound nbt = new NBTTagCompound();
+							nbt.setDouble("filling", tile.getField(2) / (double) tile.getField(3));
+							return nbt;
+						});
+						lis.add(t -> {
+							TileEntityFurnace tile = (TileEntityFurnace) t;
+							NBTTagCompound nbt = new NBTTagCompound();
+							nbt.setTag("stack", tile.getStackInSlot(2).writeToNBT(new NBTTagCompound()));
+							return nbt;
+						});
 						return lis;
 					}
 
@@ -159,18 +167,20 @@ public class HUDLibrary {
 
 					@Override
 					public Side readingSide() {
-						return Side.CLIENT;
+						return Side.SERVER;
 					}
 
 					@Override
 					public double totalScale(EntityPlayer player, EnumFacing facing) {
-						if (!true)
+						if (true)
 							return 1.3 * 2;
 						return (MathHelper.sin(player.ticksExisted / 10f) + 2.5) / 2.;
 					}
 
 					@Override
-					public double offset(EntityPlayer player, Axis axis, EnumFacing facing) {
+					public double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
+						//						if (axis == Axis.NORMAL)
+						//							return Math.sin(player.ticksExisted / 9.);
 						if (true)
 							return 0;
 						if (axis == Axis.HORIZONTAL)
@@ -182,16 +192,20 @@ public class HUDLibrary {
 
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
-						if (!true)
-							return 120 * 2;
+						if (true)
+							return 120;
 						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 50);
 					}
 
 					@Override
 					public int getMargin(Direction dir) {
-						return 9;
+						return 2;
 					}
 
+					@Override
+					public boolean is360degrees(EntityPlayer player) {
+						return IHUDProvider.super.is360degrees(player) ^ true;
+					}
 				};
 
 				@Override
@@ -207,96 +221,6 @@ public class HUDLibrary {
 				}
 
 			});
-		}
-	}
-
-	@SubscribeEvent
-	public static void render(RenderWorldLastEvent event) {
-		try {
-			Minecraft mc = Minecraft.getMinecraft();
-			for (TileEntity t : mc.world.loadedTileEntityList) {
-				if (!t.hasCapability(HUDCapability.cap, null))
-					continue;
-
-				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-				Vec3d v = new Vec3d(t.getPos().getX() + .5, mc.player.getPositionEyes(0).y, t.getPos().getZ() + .5);
-				v = v.subtract(mc.player.getPositionEyes(0));
-				EnumFacing face = EnumFacing.getFacingFromVector((float) v.x, (float) v.y, (float) v.z);
-				if (!hud.isVisible(mc.player, face.getOpposite(), t))
-					continue;
-				EntityPlayer player = mc.player;
-				//				RayTraceResult rtr = mc.objectMouseOver;
-				//				if (hud.requireFocus(player, face.getOpposite()) && !(rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos().equals(t.getPos())))
-				//					continue;
-				List<HUDElement> elements = hud.elements(player, face.getOpposite());
-				if (elements == null || elements.isEmpty())
-					continue;
-
-				NBTTagCompound n = hud.readingSide().isServer() ? hudelements.get(new DirectionPos(t.getPos(), face.getOpposite())) : null;
-				NBTTagList lis = n != null ? (NBTTagList) n.getTag("list") : null;
-				if (lis != null) {
-					Validate.isTrue(elements.size() == lis.tagCount());
-					for (int i = 0; i < elements.size(); i++) {
-						elements.get(i).readSyncTag(lis.getCompoundTagAt(i));
-					}
-				}
-
-				double x = t.getPos().getX() - TileEntityRendererDispatcher.staticPlayerX;
-				double y = t.getPos().getY() - TileEntityRendererDispatcher.staticPlayerY;
-				double z = t.getPos().getZ() - TileEntityRendererDispatcher.staticPlayerZ;
-				GlStateManager.pushMatrix();
-				double dx = face.getAxis() == EnumFacing.Axis.Z ? 0.5F : Math.max(-0.001, face.getAxisDirection().getOffset() * -1.001);
-				double dz = face.getAxis() == EnumFacing.Axis.X ? 0.5F : Math.max(-0.001, face.getAxisDirection().getOffset() * -1.001);
-
-				GlStateManager.translate((float) x + dx, (float) y + 1F, (float) z + dz);
-				float f1 = face.getHorizontalIndex() * 90f;
-				if (face.getAxis() == EnumFacing.Axis.Z)
-					f1 += 180f;
-				GlStateManager.rotate(f1, 0.0F, 1.0F, 0.0F);
-				GlStateManager.enableRescaleNormal();
-				int size = hud.width(player, face.getOpposite());
-				int effectiveSize = size - hud.getMargin(Direction.LEFT) - hud.getMargin(Direction.RIGHT);
-				float f = 1f / size;
-				int height = elements.stream().mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).sum();
-				height += hud.getMargin(Direction.UP) + hud.getMargin(Direction.DOWN);
-				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 5.);
-				GlStateManager.translate(-.5 * totalScale + hud.offset(player, Axis.HORIZONTAL, face.getOpposite()), //
-						1 * totalScale + hud.offset(player, Axis.VERTICAL, face.getOpposite()), //
-						0 + hud.offset(player, Axis.NORMAL, face.getOpposite()));
-				GlStateManager.scale(f, -f, f);
-				//				GlStateManager.glNormal3f(0.0F, 0.0F, -f);
-				GlStateManager.depthMask(false);
-				GlStateManager.scale(totalScale, totalScale, totalScale);
-				int color = hud.getBackgroundColor(player, face.getOpposite());
-				GuiUtils.drawGradientRect(0, 0, size - height, size, size, color, color);
-				GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), 0xff5555E5, 0xff5555E5);
-				GlStateManager.translate(hud.getMargin(Direction.LEFT), hud.getMargin(Direction.UP), 0);
-				GlStateManager.translate(0, size - height, 0);
-				for (int j = 0; j < elements.size(); ++j) {
-					GlStateManager.depthMask(false);
-					HUDElement e = elements.get(j);
-					int padLeft = e.getPadding(Direction.LEFT), padTop = e.getPadding(Direction.UP), padRight = e.getPadding(Direction.RIGHT), padDown = e.getPadding(Direction.DOWN);
-					Dimension d = e.dimension(effectiveSize - padLeft - padRight);
-					int offsetX = padLeft;
-					if (e.getAlignment() == Alignment.RIGHT)
-						offsetX += ((effectiveSize - padLeft - padRight) - d.width);
-					else if (e.getAlignment() == Alignment.CENTER) {
-						offsetX += ((effectiveSize - padLeft - padRight) - d.width) / 2;
-					}
-					GlStateManager.translate(offsetX, padTop, 0);
-					//					GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, 0xff333333, 0xff333333);
-					e.draw(effectiveSize - padLeft - padRight);
-					GlStateManager.translate(-offsetX, padDown, 0);
-					GlStateManager.translate(0, d.height, 0);
-					//					yy += d.height;
-				}
-				//				GlStateManager.scale(1. / factor, 1. / factor, 1. / factor);
-				GlStateManager.scale(1. / totalScale, 1. / totalScale, 1. / totalScale);
-				GlStateManager.depthMask(true);
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-				GlStateManager.popMatrix();
-			}
-		} catch (ConcurrentModificationException e) {
 		}
 	}
 

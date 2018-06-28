@@ -3,6 +3,7 @@ package mrriegel.hudlibrary.tehud.element;
 import java.awt.Color;
 import java.awt.Dimension;
 
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
 public class HUDProgressBar extends HUDElement {
@@ -16,9 +17,6 @@ public class HUDProgressBar extends HUDElement {
 		this.height = height;
 		this.frameColor = frameColor;
 		this.color = color;
-		filling = .45;
-		//			filling = Math.sin((Minecraft.getMinecraft().player.ticksExisted + Minecraft.getMinecraft().getRenderPartialTicks()) / 10.) / 2 + .5;
-		//			System.out.println(filling);
 	}
 
 	@Override
@@ -31,20 +29,11 @@ public class HUDProgressBar extends HUDElement {
 		return d;
 	}
 
-	//		@Override
-	//		public NBTTagCompound writeSyncTag(TileEntity tile) {
-	//			NBTTagCompound n = new NBTTagCompound();
-	//			if (tile instanceof TileEntityFurnace) {
-	//				TileEntityFurnace t = (TileEntityFurnace) tile;
-	//				n.setDouble("fill", t.getField(0) / (double) t.getField(1));
-	//			}
-	//			return n;
-	//		}
-	//
-	//		@Override
-	//		public void readSyncTag(NBTTagCompound tag) {
-	//			filling = tag.getDouble("fill");
-	//		}
+	@Override
+	public void readSyncTag(NBTTagCompound tag) {
+		if (tag.hasKey("filling"))
+			filling = tag.getDouble("filling");
+	}
 
 	@Override
 	public void draw(int maxWidth) {

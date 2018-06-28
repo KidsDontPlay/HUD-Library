@@ -1,9 +1,11 @@
 package mrriegel.hudlibrary.tehud;
 
 import java.util.List;
+import java.util.function.Function;
 
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fml.relauncher.Side;
@@ -26,9 +28,11 @@ public interface IHUDProvider {
 		return tile.getPos().getDistance((int) player.posX, (int) player.posY, (int) player.posZ) <= 24;
 	}
 
-	List<HUDElement> elements(EntityPlayer player, EnumFacing facing);
+	List<HUDElement> getElements(EntityPlayer player, EnumFacing facing);
 
-	default double offset(EntityPlayer player, Axis axis, EnumFacing facing) {
+	List<Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing);
+
+	default double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 		return 0;
 	}
 
@@ -42,6 +46,10 @@ public interface IHUDProvider {
 
 	default int getMargin(Direction dir) {
 		return 2;
+	}
+
+	default boolean is360degrees(EntityPlayer player) {
+		return false;
 	}
 
 	public enum Axis {

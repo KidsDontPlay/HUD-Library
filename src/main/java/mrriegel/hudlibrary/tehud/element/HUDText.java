@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.nbt.NBTTagCompound;
 
 public class HUDText extends HUDElement {
 	private String text;
@@ -19,7 +20,12 @@ public class HUDText extends HUDElement {
 		this.text = text;
 		this.lineBreak = lineBreak;
 		this.fr = Minecraft.getMinecraft().fontRenderer;
-		//			this.color = 0xFF443322;
+	}
+
+	@Override
+	public void readSyncTag(NBTTagCompound tag) {
+		if (tag.hasKey("text"))
+			text = tag.getString("text");
 	}
 
 	@Override

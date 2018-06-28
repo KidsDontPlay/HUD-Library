@@ -2,7 +2,6 @@ package mrriegel.hudlibrary.tehud.element;
 
 import java.awt.Dimension;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 
@@ -12,15 +11,12 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.TextTable.Alignment;
 
 public abstract class HUDElement {
 
-	Function<TileEntity, NBTTagCompound> writer = t -> new NBTTagCompound();
-	BiConsumer<HUDElement, NBTTagCompound> reader = (h, n) -> {
+	protected BiConsumer<HUDElement, NBTTagCompound> reader = (h, n) -> {
 	};
-
 	protected @Nonnull Alignment align = Alignment.LEFT;
 	protected Int2IntMap padding = new Int2IntOpenHashMap(4);
 	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
@@ -61,14 +57,15 @@ public abstract class HUDElement {
 		return this;
 	}
 
+	public HUDElement setReader(BiConsumer<HUDElement, NBTTagCompound> reader) {
+		this.reader = reader;
+		return this;
+	}
+
 	/** @return Dimension without padding */
 
 	@Nonnull
 	public abstract Dimension dimension(int maxWidth);
-
-	public NBTTagCompound writeSyncTag(TileEntity tile) {
-		return writer.apply(tile);
-	}
 
 	public void readSyncTag(NBTTagCompound tag) {
 		reader.accept(this, tag);

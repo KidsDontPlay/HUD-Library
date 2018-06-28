@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 import io.netty.buffer.ByteBuf;
-import mrriegel.hudlibrary.HUDLibrary;
-import mrriegel.hudlibrary.tehud.element.HUDElement;
+import mrriegel.hudlibrary.ClientEvents;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -39,8 +39,9 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 					for (EnumFacing f : EnumFacing.HORIZONTALS) {
 						NBTTagCompound n = new NBTTagCompound();
 						NBTTagList lis = new NBTTagList();
-						for (HUDElement e : hud.elements(player, f)) {
-							lis.appendTag(e.writeSyncTag(t));
+						for (Function<TileEntity, NBTTagCompound> e : hud.getNBTData(player, f)) {
+							NBTTagCompound nn = e.apply(t);
+							lis.appendTag(nn != null ? nn : new NBTTagCompound());
 						}
 						n.setTag("list", lis);
 						map.put(new DirectionPos(p, f), n);
@@ -55,7 +56,10 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 	public IMessage onMessage(HUDSyncMessage message, MessageContext ctx) {
 		Map<DirectionPos, NBTTagCompound> map = message.map;
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			HUDLibrary.hudelements = map;
+			for (Entry<DirectionPos, NBTTagCompound> e : ClientEvents.hudelements.entrySet()) {
+				ClientEvents.lasthudelements.put(e.getKey(), e.getValue().copy());
+			}
+			ClientEvents.hudelements = map;
 		});
 		return null;
 	}

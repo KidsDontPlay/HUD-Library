@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 
 public class HUDItemStack extends HUDElement {
 	private static final Dimension dim = new Dimension(16, 16);
@@ -26,12 +25,9 @@ public class HUDItemStack extends HUDElement {
 	}
 
 	@Override
-	public NBTTagCompound writeSyncTag(TileEntity tile) {
-		return super.writeSyncTag(tile);
-	}
-
-	@Override
 	public void readSyncTag(NBTTagCompound tag) {
+		if (tag.hasKey("stack"))
+			stack = new ItemStack(tag.getCompoundTag("stack"));
 	}
 
 	@Override
@@ -55,7 +51,6 @@ public class HUDItemStack extends HUDElement {
 		GlStateManager.scale(1, 1, s);
 		GlStateManager.translate(0, 0, -tr);
 		GlStateManager.popMatrix();
-		GlStateManager.disableLighting();
 		RenderHelper.disableStandardItemLighting();
 	}
 
