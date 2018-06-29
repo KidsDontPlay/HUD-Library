@@ -19,6 +19,14 @@ public class HUDProgressBar extends HUDElement {
 		this.color = color;
 	}
 
+	public double getFilling() {
+		return filling;
+	}
+
+	public void setFilling(double filling) {
+		this.filling = filling;
+	}
+
 	@Override
 	public Dimension dimension(int maxWidth) {
 		Dimension d = dims.get(maxWidth);
@@ -31,17 +39,22 @@ public class HUDProgressBar extends HUDElement {
 
 	@Override
 	public void readSyncTag(NBTTagCompound tag) {
+		if (reader != null) {
+			reader.accept(this, tag);
+			return;
+		}
 		if (tag.hasKey("filling"))
 			filling = tag.getDouble("filling");
 	}
 
 	@Override
 	public void draw(int maxWidth) {
-		Color c = new Color(color);
+		Color c = new Color(color, true);
 		Color background = c.darker();
 		float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
 		hsb[2] += -.1f;
 		int c2 = Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]);
+		int width = this.width < 0 ? maxWidth : this.width;
 
 		GuiUtils.drawGradientRect(0, 1, 0, width - 1, height - 2, background.getRGB(), background.getRGB());
 		int del = height - 2;

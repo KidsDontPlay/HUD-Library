@@ -1,30 +1,36 @@
 package mrriegel.hudlibrary;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.Function;
 
-import joptsimple.internal.Strings;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.HUDCapability;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
-import mrriegel.hudlibrary.tehud.element.HUDLine;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
@@ -50,7 +56,7 @@ public class HUDLibrary {
 
 	@Instance(HUDLibrary.MODID)
 	public static HUDLibrary instance;
-	static boolean dev;
+	public static boolean dev;
 
 	public static SimpleNetworkWrapper snw;
 
@@ -83,81 +89,54 @@ public class HUDLibrary {
 
 	@SubscribeEvent
 	public static void attach(AttachCapabilitiesEvent<TileEntity> event) {
-		if (dev && event.getObject() instanceof TileEntityFurnace) {
+		if (!dev)
+			return;
+		if (event.getObject() instanceof TileEntityFurnace) {
 			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
 				TileEntityFurnace tile = (TileEntityFurnace) event.getObject();
 				IHUDProvider pro = new IHUDProvider() {
-					List<HUDElement> ls = null;
-					long time = 0;
 
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
-						if (System.currentTimeMillis() - time > 1000 || true) {
-							ls = null;
-							time = System.currentTimeMillis();
-						}
-						if (ls != null)
-							return ls;
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDText("Facing: " + (player.isSneaking() ? facing.toString().toUpperCase() : facing), false));
-						//						lis.add(new HUDText("KI!!", false));
-						//						lis.add(new HUDText("KIsandwichm salamander nuss risesn soapß", false));
-						lis.add(new HUDItemStack(ItemStack.EMPTY));
-						lis.add(new HUDProgressBar(78, 16, 0x4415353e, 0xe1e95bcd));
-						lis.add(new HUDItemStack(ItemStack.EMPTY));
-						HUDElement[] ar = new HUDElement[10 - -2];
-						for (int i = 0; i < ar.length; i++) {
-							ar[i] = new HUDItemStack(new ItemStack(Blocks.WOOL, 1 + i, i));
-						}
-						//						lis.add(new HUDItemStack(new ItemStack(Blocks.CHEST)));
-						if (true)
-							lis.add(new HUDCompound(true, ar));
-						else
-							lis.add(new HUDProgressBar(38, 16, 0x4415353e, 0xe1e95bcd));
-						lis.add(new HUDLine());
-						lis.add(new HUDProgressBar(50, 8, 0xff232321, 0xff9b2223));
-						//						lis.add(new HUDText("KIlamm kohle rosenmann ", false));
-						//						lis.add(new HUDText("KIsinus bol", false));
-						List<HUDElement> list = new ArrayList<>();
-						for (int i = 1; i < 9; i++) {
-							list.add(new HUDText(Strings.repeat('o', i), false));
-						}
-						list.add(0, new HUDText("H", false));
-						list.add(new HUDText("moreover far way from chinatown", false));
-						list.add(new HUDText("Over nothing else than a shot rose", false));
-
-						if (false)
-							lis.add(new HUDCompound(true, list));
-
-						//						lis.add(new HUDText("KIdinekl cool", false));
-						//						lis.add(new HUDText("Wood", false));
-						//						Collections.shuffle(lis, new Random(facing.getName2().hashCode()));
-						return ls = lis;
+						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
+						return lis;
 					}
 
 					@Override
-					public List<Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
-						List<Function<TileEntity, NBTTagCompound>> lis = new ArrayList<>();
-						lis.add(t -> null);
-						lis.add(t -> {
+					public Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						Int2ObjectMap<Function<TileEntity, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
+						map.put(0, t -> {
 							TileEntityFurnace tile = (TileEntityFurnace) t;
 							NBTTagCompound nbt = new NBTTagCompound();
+							NBTTagList lis = new NBTTagList();
+							lis.appendTag(new NBTTagCompound());
 							nbt.setTag("stack", tile.getStackInSlot(0).writeToNBT(new NBTTagCompound()));
-							return nbt;
+							lis.appendTag(nbt);
+							NBTTagCompound ret = new NBTTagCompound();
+							ret.setTag("elements", lis);
+							return ret;
 						});
-						lis.add(t -> {
+						map.put(2, t -> {
 							TileEntityFurnace tile = (TileEntityFurnace) t;
 							NBTTagCompound nbt = new NBTTagCompound();
 							nbt.setDouble("filling", tile.getField(2) / (double) tile.getField(3));
 							return nbt;
 						});
-						lis.add(t -> {
+						map.put(1, t -> {
 							TileEntityFurnace tile = (TileEntityFurnace) t;
 							NBTTagCompound nbt = new NBTTagCompound();
+							NBTTagList lis = new NBTTagList();
+							lis.appendTag(new NBTTagCompound());
 							nbt.setTag("stack", tile.getStackInSlot(2).writeToNBT(new NBTTagCompound()));
-							return nbt;
+							lis.appendTag(nbt);
+							NBTTagCompound ret = new NBTTagCompound();
+							ret.setTag("elements", lis);
+							return ret;
 						});
-						return lis;
+						return map;
 					}
 
 					@Override
@@ -173,7 +152,11 @@ public class HUDLibrary {
 					@Override
 					public double totalScale(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 1.3 * 2;
+							return player.getPositionEyes(Minecraft.getMinecraft().getRenderPartialTicks()).distanceTo(new Vec3d(tile.getPos().getX() + .5, tile.getPos().getY() + .5, tile.getPos().getZ() + .5));
+						//							return player.getDistance(tile.getPos().getX() + .5, tile.getPos().getY() + .5, tile.getPos().getZ() + .5);
+						if (true)
+							return 1;
+
 						return (MathHelper.sin(player.ticksExisted / 10f) + 2.5) / 2.;
 					}
 
@@ -193,7 +176,7 @@ public class HUDLibrary {
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 120;
+							return 100;
 						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 50);
 					}
 
@@ -204,8 +187,77 @@ public class HUDLibrary {
 
 					@Override
 					public boolean is360degrees(EntityPlayer player) {
-						return IHUDProvider.super.is360degrees(player) ^ true;
+						return IHUDProvider.super.is360degrees(player) ^ !true;
 					}
+				};
+
+				@Override
+				public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
+					return capability == HUDCapability.cap;
+				}
+
+				@Override
+				public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+					if (hasCapability(capability, facing))
+						return (T) pro;
+					return null;
+				}
+
+			});
+		} else if (event.getObject() instanceof TileEntityChest) {
+			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
+				TileEntityChest tile = (TileEntityChest) event.getObject();
+				IHUDProvider pro = new IHUDProvider() {
+
+					@Override
+					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
+						List<HUDElement> lis = new ArrayList<>();
+						lis.add(new HUDText("samba", false));
+						List<HUDElement> list = new ArrayList<>();
+						for (int i = 0; i < tile.getSizeInventory(); i++) {
+							list.add(new HUDItemStack(ItemStack.EMPTY));
+						}
+						lis.add(new HUDCompound(true, list));
+						return lis;
+					}
+
+					@Override
+					public Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						Int2ObjectMap<Function<TileEntity, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
+						map.put(1, t -> {
+							TileEntityChest tile = (TileEntityChest) t;
+							NBTTagList lis = new NBTTagList();
+							for (int i = 0; i < tile.getSizeInventory(); i++) {
+								NBTTagCompound nbt = new NBTTagCompound();
+								nbt.setTag("stack", tile.getStackInSlot(i).writeToNBT(new NBTTagCompound()));
+								lis.appendTag(nbt);
+							}
+							NBTTagCompound ret = new NBTTagCompound();
+							ret.setTag("elements", lis);
+							return ret;
+						});
+						return map;
+					}
+
+					@Override
+					public int width(EntityPlayer player, EnumFacing facing) {
+						return 170;
+					}
+
+					@Override
+					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
+						Random k = new Random(tile.getPos().toLong());
+						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
+						if (true)
+							return c.getRGB();
+						return 0x88AA1144;
+					}
+
+					@Override
+					public Side readingSide() {
+						return Side.SERVER;
+					}
+
 				};
 
 				@Override

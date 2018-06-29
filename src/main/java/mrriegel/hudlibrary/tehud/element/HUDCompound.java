@@ -26,18 +26,28 @@ public class HUDCompound extends HUDElement {
 		Validate.isTrue(elements != null && elements.length != 0);
 	}
 
-	public HUDCompound(boolean lineBreak, Collection<HUDElement> lis) {
+	public HUDCompound(boolean lineBreak, Collection<? extends HUDElement> lis) {
 		this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
+	}
+
+	public HUDElement[] getElements() {
+		return elements;
 	}
 
 	@Override
 	public void readSyncTag(NBTTagCompound tag) {
+		if (reader != null) {
+			reader.accept(this, tag);
+			return;
+		}
 		if (tag.hasKey("elements")) {
 			NBTTagList list = tag.getTagList("elements", 10);
-			Validate.isTrue(elements.length == list.tagCount());
-			for (int i = 0; i < elements.length; i++) {
+			//			Validate.isTrue(elements.length == list.tagCount());
+			int size = Math.min(elements.length, list.tagCount());
+			for (int i = 0; i < size; i++) {
 				HUDElement h = elements[i];
 				NBTTagCompound nbt = list.getCompoundTagAt(i);
+				//				System.out.println(nbt);
 				h.readSyncTag(nbt);
 			}
 		}
@@ -72,7 +82,7 @@ public class HUDCompound extends HUDElement {
 			int totalWidth = 0, totalHeight = 0;
 			for (List<HUDElement> l : getElementRows(maxWidth)) {
 				totalWidth = Math.max(totalWidth, l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)).sum());
-				totalHeight += l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT)).max().getAsInt();
+				totalHeight += l.stream().mapToInt(e -> e.dimension(maxWidth - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).max().getAsInt();
 			}
 			d = new Dimension(totalWidth, totalHeight);
 		} else {

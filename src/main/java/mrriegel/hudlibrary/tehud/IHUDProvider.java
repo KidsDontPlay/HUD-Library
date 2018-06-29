@@ -1,6 +1,7 @@
 package mrriegel.hudlibrary.tehud;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import mrriegel.hudlibrary.tehud.element.HUDElement;
@@ -30,7 +31,7 @@ public interface IHUDProvider {
 
 	List<HUDElement> getElements(EntityPlayer player, EnumFacing facing);
 
-	List<Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing);
+	Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing);
 
 	default double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 		return 0;

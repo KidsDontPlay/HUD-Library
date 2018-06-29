@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.lwjgl.opengl.GL11;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -29,6 +31,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.util.TextTable.Alignment;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -53,6 +56,10 @@ public class ClientEvents {
 				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
 				Vec3d v = new Vec3d(t.getPos().getX() + .5, mc.player.getPositionEyes(event.getPartialTicks()).y, t.getPos().getZ() + .5);
 				v = v.subtract(mc.player.getPositionEyes(event.getPartialTicks()));
+				Vec3d see = mc.player.getLook(event.getPartialTicks());
+				double angle = Math.toDegrees(Math.acos(see.dotProduct(v.normalize())));
+				if (angle > 100)
+					continue;
 				EnumFacing face = EnumFacing.getFacingFromVector((float) v.x, (float) v.y, (float) v.z);
 				if (!hud.isVisible(mc.player, face.getOpposite(), t))
 					continue;
@@ -68,7 +75,6 @@ public class ClientEvents {
 				NBTTagCompound n = hud.readingSide().isServer() ? hudelements.get(new DirectionPos(t.getPos(), face.getOpposite())) : null;
 				NBTTagList lis = n != null ? (NBTTagList) n.getTag("list") : null;
 				if (lis != null) {
-					//					Validate.isTrue(elements.size() == lis.tagCount());
 					int size = Math.min(elements.size(), lis.tagCount());
 					for (int i = 0; i < size; i++) {
 						elements.get(i).readSyncTag(lis.getCompoundTagAt(i));
@@ -80,16 +86,16 @@ public class ClientEvents {
 				double z = t.getPos().getZ() - TileEntityRendererDispatcher.staticPlayerZ;
 				GlStateManager.pushMatrix();
 				GlStateManager.translate((float) x + .5, (float) y + 1F, (float) z + .5);
-				float f1 = 0;
+				double f1 = 0;
 				if (hud.is360degrees(player)) {
-					f1 = (float) ((Math.atan2(v.x, v.z) + Math.PI) * (360 / (2 * Math.PI)));
-					//					f1 *= 360 / (2 * Math.PI);
+					f1 = (180 * (Math.atan2(v.x, v.z) + Math.PI)) / Math.PI;
+					//					f1 = (float) ((Math.atan2(v.x, v.z) + Math.PI) * (360 / (2 * Math.PI)));
 				} else {
-					f1 = face.getHorizontalIndex() * 90f;
+					f1 = face.getHorizontalIndex() * 90.;
 					if (face.getAxis() == EnumFacing.Axis.Z)
-						f1 += 180f;
+						f1 += 180;
 				}
-				GlStateManager.rotate(f1, 0.0F, 1.0F, 0.0F);
+				GL11.glRotated(f1, 0.0, 1.0, 0.0);
 				GlStateManager.translate(0, 0, .5001);
 				GlStateManager.enableRescaleNormal();
 				int size = hud.width(player, face.getOpposite());
@@ -97,7 +103,7 @@ public class ClientEvents {
 				float f = 1f / size;
 				int height = elements.stream().mapToInt(e -> e.dimension(effectiveSize - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).height + e.getPadding(Direction.UP) + e.getPadding(Direction.DOWN)).sum();
 				height += hud.getMargin(Direction.UP) + hud.getMargin(Direction.DOWN);
-				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 5.);
+				double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 50.);
 				GlStateManager.translate(-.5 * totalScale + hud.offset(player, face.getOpposite(), Axis.HORIZONTAL), //
 						1 * totalScale + hud.offset(player, face.getOpposite(), Axis.VERTICAL), //
 						0 + hud.offset(player, face.getOpposite(), Axis.NORMAL));
@@ -107,7 +113,7 @@ public class ClientEvents {
 				GlStateManager.scale(totalScale, totalScale, totalScale);
 				int color = hud.getBackgroundColor(player, face.getOpposite());
 				GuiUtils.drawGradientRect(0, 0, size - height, size, size, color, color);
-				GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), 0xff5555E5, 0xff5555E5);
+				//				GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), 0xff5555E5, 0xff5555E5);
 				GlStateManager.translate(hud.getMargin(Direction.LEFT), hud.getMargin(Direction.UP), 0);
 				GlStateManager.translate(0, size - height, 0);
 				for (int j = 0; j < elements.size(); ++j) {
@@ -134,6 +140,13 @@ public class ClientEvents {
 				GlStateManager.popMatrix();
 			}
 		} catch (ConcurrentModificationException e) {
+		}
+	}
+
+	@SubscribeEvent
+	public static void join(EntityJoinWorldEvent event) {
+		if (event.getEntity() instanceof EntityPlayer && event.getWorld().isRemote) {
+			hudelements.clear();
 		}
 	}
 }

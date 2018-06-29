@@ -22,8 +22,20 @@ public class HUDText extends HUDElement {
 		this.fr = Minecraft.getMinecraft().fontRenderer;
 	}
 
+	public String getText() {
+		return text;
+	}
+
+	public void setText(String text) {
+		this.text = text;
+	}
+
 	@Override
 	public void readSyncTag(NBTTagCompound tag) {
+		if (reader != null) {
+			reader.accept(this, tag);
+			return;
+		}
 		if (tag.hasKey("text"))
 			text = tag.getString("text");
 	}

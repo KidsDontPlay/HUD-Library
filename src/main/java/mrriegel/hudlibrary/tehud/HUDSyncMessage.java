@@ -1,6 +1,7 @@
 package mrriegel.hudlibrary.tehud;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -31,23 +33,34 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 	public HUDSyncMessage(EntityPlayer player) {
 		BlockPos playerPos = new BlockPos(player);
 		int radius = 7;
-		for (BlockPos p : BlockPos.getAllInBox(playerPos.add(-radius, -radius, -radius), playerPos.add(radius, radius, radius))) {
-			TileEntity t = player.world.getTileEntity(p);
-			if (t != null && t.hasCapability(HUDCapability.cap, null)) {
-				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-				if (hud.readingSide().isServer() && hud.needsSync()) {
-					for (EnumFacing f : EnumFacing.HORIZONTALS) {
-						NBTTagCompound n = new NBTTagCompound();
-						NBTTagList lis = new NBTTagList();
-						for (Function<TileEntity, NBTTagCompound> e : hud.getNBTData(player, f)) {
-							NBTTagCompound nn = e.apply(t);
-							lis.appendTag(nn != null ? nn : new NBTTagCompound());
+		try {
+			//		for (BlockPos p : BlockPos.getAllInBox(playerPos.add(-radius, -radius, -radius), playerPos.add(radius, radius, radius))) {
+			//			TileEntity t = player.world.getTileEntity(p);
+			for (TileEntity t : player.world.loadedTileEntityList) {
+				if (t != null && t.hasCapability(HUDCapability.cap, null) && player.getPositionVector().distanceTo(new Vec3d(t.getPos()).addVector(.5, 0, .5)) < radius) {
+					IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
+					if (hud.readingSide().isServer() && hud.needsSync()) {
+						for (EnumFacing f : EnumFacing.HORIZONTALS) {
+							NBTTagCompound n = new NBTTagCompound();
+							NBTTagList lis = new NBTTagList();
+							Map<Integer, Function<TileEntity, NBTTagCompound>> nbts = hud.getNBTData(player, f);
+							for (Entry<Integer, Function<TileEntity, NBTTagCompound>> e : nbts.entrySet()) {
+								int index = e.getKey();
+								while (lis.tagCount() <= index)
+									lis.appendTag(new NBTTagCompound());
+								lis.set(index, e.getValue().apply(t));
+							}
+							//						for (Function<TileEntity, NBTTagCompound> e : hud.getNBTData(player, f)) {
+							//							NBTTagCompound nn = e.apply(t);
+							//							lis.appendTag(nn != null ? nn : new NBTTagCompound());
+							//						}
+							n.setTag("list", lis);
+							map.put(new DirectionPos(t.getPos(), f), n);
 						}
-						n.setTag("list", lis);
-						map.put(new DirectionPos(p, f), n);
 					}
 				}
 			}
+		} catch (ConcurrentModificationException e) {
 		}
 
 	}
@@ -59,7 +72,8 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 			for (Entry<DirectionPos, NBTTagCompound> e : ClientEvents.hudelements.entrySet()) {
 				ClientEvents.lasthudelements.put(e.getKey(), e.getValue().copy());
 			}
-			ClientEvents.hudelements = map;
+			//			ClientEvents.hudelements = map;
+			ClientEvents.hudelements.putAll(map);
 		});
 		return null;
 	}

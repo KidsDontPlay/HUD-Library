@@ -15,11 +15,10 @@ import net.minecraftforge.common.util.TextTable.Alignment;
 
 public abstract class HUDElement {
 
-	protected BiConsumer<HUDElement, NBTTagCompound> reader = (h, n) -> {
-	};
+	protected BiConsumer<HUDElement, NBTTagCompound> reader = null;
 	protected @Nonnull Alignment align = Alignment.LEFT;
-	protected Int2IntMap padding = new Int2IntOpenHashMap(4);
-	protected Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
+	protected final Int2IntMap padding = new Int2IntOpenHashMap(4);
+	protected final Int2ObjectMap<Dimension> dims = new Int2ObjectOpenHashMap<>();
 
 	protected HUDElement() {
 		padding.defaultReturnValue(1);
@@ -62,14 +61,15 @@ public abstract class HUDElement {
 		return this;
 	}
 
+	public void readSyncTag(NBTTagCompound tag) {
+		if (reader != null)
+			reader.accept(this, tag);
+	}
+
 	/** @return Dimension without padding */
 
 	@Nonnull
 	public abstract Dimension dimension(int maxWidth);
-
-	public void readSyncTag(NBTTagCompound tag) {
-		reader.accept(this, tag);
-	}
 
 	public abstract void draw(int maxWidth);
 
