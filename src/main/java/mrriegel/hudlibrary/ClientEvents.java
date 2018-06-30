@@ -53,17 +53,17 @@ public class ClientEvents {
 				if (!t.hasCapability(HUDCapability.cap, null))
 					continue;
 
+				EntityPlayer player = mc.player;
 				IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-				Vec3d v = new Vec3d(t.getPos().getX() + .5, mc.player.getPositionEyes(event.getPartialTicks()).y, t.getPos().getZ() + .5);
-				v = v.subtract(mc.player.getPositionEyes(event.getPartialTicks()));
-				Vec3d see = mc.player.getLook(event.getPartialTicks());
+				Vec3d v = new Vec3d(t.getPos().getX() + .5, player.getPositionEyes(event.getPartialTicks()).y, t.getPos().getZ() + .5);
+				v = v.subtract(player.getPositionEyes(event.getPartialTicks()));
+				Vec3d see = player.getLook(event.getPartialTicks());
 				double angle = Math.toDegrees(Math.acos(see.dotProduct(v.normalize())));
 				if (angle > 100)
 					continue;
 				EnumFacing face = EnumFacing.getFacingFromVector((float) v.x, (float) v.y, (float) v.z);
-				if (!hud.isVisible(mc.player, face.getOpposite(), t))
+				if (!hud.isVisible(player, face.getOpposite(), t))
 					continue;
-				EntityPlayer player = mc.player;
 				//				RayTraceResult rtr = mc.objectMouseOver;
 				//				if (hud.requireFocus(player, face.getOpposite()) && !(rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos().equals(t.getPos())))
 				//					continue;
@@ -80,12 +80,13 @@ public class ClientEvents {
 						elements.get(i).readSyncTag(lis.getCompoundTagAt(i));
 					}
 				}
-
+				/** render */
 				double x = t.getPos().getX() - TileEntityRendererDispatcher.staticPlayerX;
 				double y = t.getPos().getY() - TileEntityRendererDispatcher.staticPlayerY;
 				double z = t.getPos().getZ() - TileEntityRendererDispatcher.staticPlayerZ;
 				GlStateManager.pushMatrix();
 				GlStateManager.translate((float) x + .5, (float) y + 1F, (float) z + .5);
+
 				double f1 = 0;
 				if (hud.is360degrees(player)) {
 					f1 = (180 * (Math.atan2(v.x, v.z) + Math.PI)) / Math.PI;
@@ -97,6 +98,7 @@ public class ClientEvents {
 				}
 				GL11.glRotated(f1, 0.0, 1.0, 0.0);
 				GlStateManager.translate(0, 0, .5001);
+
 				GlStateManager.enableRescaleNormal();
 				int size = hud.width(player, face.getOpposite());
 				int effectiveSize = size - hud.getMargin(Direction.LEFT) - hud.getMargin(Direction.RIGHT);
@@ -109,14 +111,20 @@ public class ClientEvents {
 						0 + hud.offset(player, face.getOpposite(), Axis.NORMAL));
 				GlStateManager.scale(f, -f, f);
 				//				GlStateManager.glNormal3f(0.0F, 0.0F, -f);
-				GlStateManager.depthMask(false);
+				GlStateManager.depthMask(!false);
+
 				GlStateManager.scale(totalScale, totalScale, totalScale);
 				int color = hud.getBackgroundColor(player, face.getOpposite());
 				GuiUtils.drawGradientRect(0, 0, size - height, size, size, color, color);
-				//				GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), 0xff5555E5, 0xff5555E5);
+				if (!false) {
+					int testColor = 0xff000000 | t.getPos().toString().hashCode();
+					GlStateManager.translate(0, 0, .01);
+					GuiUtils.drawGradientRect(0, 0 + hud.getMargin(Direction.LEFT), size - height + hud.getMargin(Direction.UP), size - hud.getMargin(Direction.RIGHT), size - hud.getMargin(Direction.DOWN), testColor, testColor);
+				}
 				GlStateManager.translate(hud.getMargin(Direction.LEFT), hud.getMargin(Direction.UP), 0);
 				GlStateManager.translate(0, size - height, 0);
-				for (int j = 0; j < elements.size(); ++j) {
+				//				GlStateManager.translate(0, 0, .003);
+				for (int j = 0; j < elements.size() && false; ++j) {
 					GlStateManager.depthMask(false);
 					HUDElement e = elements.get(j);
 					int padLeft = e.getPadding(Direction.LEFT), padTop = e.getPadding(Direction.UP), padRight = e.getPadding(Direction.RIGHT), padDown = e.getPadding(Direction.DOWN);
@@ -133,10 +141,9 @@ public class ClientEvents {
 					GlStateManager.translate(-offsetX, padDown, 0);
 					GlStateManager.translate(0, d.height, 0);
 				}
-				//				GlStateManager.scale(1. / factor, 1. / factor, 1. / factor);
 				GlStateManager.scale(1. / totalScale, 1. / totalScale, 1. / totalScale);
 				GlStateManager.depthMask(true);
-				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+				//				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				GlStateManager.popMatrix();
 			}
 		} catch (ConcurrentModificationException e) {

@@ -12,7 +12,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.HUDCapability;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
-import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
@@ -99,9 +98,15 @@ public class HUDLibrary {
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
-						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						//						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						//						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
 						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
+						Random ran = new Random(facing.name().hashCode() ^ tile.getPos().hashCode());
+						for (int i = 0; i < 5; i++) {
+							HUDProgressBar bar = new HUDProgressBar(-1, 14, 0x44098765, new Color(ran.nextInt(256), ran.nextInt(256), ran.nextInt(256), 0xFF).getRGB());
+							bar.setFilling(ran.nextDouble() / 2 + .5);
+							lis.add(bar);
+						}
 						return lis;
 					}
 
@@ -141,7 +146,11 @@ public class HUDLibrary {
 
 					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
-						return 0x88AA1144;
+						if (!true)
+							return 0x88AA1144;
+						Random k = new Random(tile.getPos().toString().hashCode());
+						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
+						return c.getRGB();
 					}
 
 					@Override
@@ -151,7 +160,7 @@ public class HUDLibrary {
 
 					@Override
 					public double totalScale(EntityPlayer player, EnumFacing facing) {
-						if (true)
+						if (!true)
 							return player.getPositionEyes(Minecraft.getMinecraft().getRenderPartialTicks()).distanceTo(new Vec3d(tile.getPos().getX() + .5, tile.getPos().getY() + .5, tile.getPos().getZ() + .5));
 						//							return player.getDistance(tile.getPos().getX() + .5, tile.getPos().getY() + .5, tile.getPos().getZ() + .5);
 						if (true)
@@ -164,6 +173,8 @@ public class HUDLibrary {
 					public double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 						//						if (axis == Axis.NORMAL)
 						//							return Math.sin(player.ticksExisted / 9.);
+						if (axis == Axis.VERTICAL)
+							return 2;
 						if (true)
 							return 0;
 						if (axis == Axis.HORIZONTAL)
@@ -182,7 +193,7 @@ public class HUDLibrary {
 
 					@Override
 					public int getMargin(Direction dir) {
-						return 2;
+						return 30;
 					}
 
 					@Override
@@ -217,7 +228,7 @@ public class HUDLibrary {
 						for (int i = 0; i < tile.getSizeInventory(); i++) {
 							list.add(new HUDItemStack(ItemStack.EMPTY));
 						}
-						lis.add(new HUDCompound(true, list));
+						//						lis.add(new HUDCompound(true, list));
 						return lis;
 					}
 

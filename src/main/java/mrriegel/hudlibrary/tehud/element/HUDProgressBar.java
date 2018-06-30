@@ -52,15 +52,25 @@ public class HUDProgressBar extends HUDElement {
 		Color c = new Color(color, true);
 		Color background = c.darker();
 		float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
-		hsb[2] += -.1f;
+		boolean swap;
+		if (swap = hsb[2] > .5f)
+			hsb[2] += -.2f;
+		else
+			hsb[2] += .2f;
 		int c2 = Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]);
+		int c1 = color;
+		if (!swap) {
+			int tmp = c1;
+			c1 = c2;
+			c2 = tmp;
+		}
 		int width = this.width < 0 ? maxWidth : this.width;
 
 		GuiUtils.drawGradientRect(0, 1, 0, width - 1, height - 2, background.getRGB(), background.getRGB());
 		int del = height - 2;
 		int del1 = del / 2;
-		GuiUtils.drawGradientRect(0, 1, 0, (int) ((width - 1) * filling), del1, c2, color);
-		GuiUtils.drawGradientRect(0, 1, del1, (int) ((width - 1) * filling), del, color, c2);
+		GuiUtils.drawGradientRect(0, 1, 0, (int) ((width - 1) * filling), del1, c2, c1);
+		GuiUtils.drawGradientRect(0, 1, del1, (int) ((width - 1) * filling), del, c1, c2);
 		//frame
 		GuiUtils.drawGradientRect(0, 0, -1, 1, height - 1, frameColor, frameColor);
 		GuiUtils.drawGradientRect(0, width - 1, -1, width, height - 1, frameColor, frameColor);
