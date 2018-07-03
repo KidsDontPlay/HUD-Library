@@ -24,7 +24,8 @@ public class CommonEvents {
 	@SubscribeEvent
 	public static void join(EntityJoinWorldEvent event) {
 		if (event.getEntity() instanceof EntityPlayer && !event.getWorld().isRemote) {
-			HUDLibrary.snw.sendTo(new HUDSyncMessage((EntityPlayer) event.getEntity(), 32), (EntityPlayerMP) event.getEntity());
+			HUDLibrary.snw.sendTo(new HUDSyncMessage((EntityPlayer) event.getEntity(), 7), (EntityPlayerMP) event.getEntity());
 		}
 	}
+
 }

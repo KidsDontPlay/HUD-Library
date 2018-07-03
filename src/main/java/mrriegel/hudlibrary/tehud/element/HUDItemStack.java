@@ -13,6 +13,7 @@ import net.minecraft.nbt.NBTTagCompound;
 public class HUDItemStack extends HUDElement {
 	private static final Dimension dim16 = new Dimension(16, 16);
 	private static final Dimension dim0 = new Dimension();
+
 	private ItemStack stack;
 	private boolean overlay = true;
 	private int customSize = -1;
@@ -81,9 +82,7 @@ public class HUDItemStack extends HUDElement {
 
 	@Override
 	public int getPadding(Direction dir) {
-		if (stack.isEmpty())
-			return 0;
-		return super.getPadding(dir);
+		return stack.isEmpty() ? 0 : super.getPadding(dir);
 	}
 
 }

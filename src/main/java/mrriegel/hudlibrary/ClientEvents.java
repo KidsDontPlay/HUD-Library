@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import com.google.common.cache.Cache;
@@ -20,6 +22,9 @@ import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Axis;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
+import mrriegel.hudlibrary.worldgui.PlayerSettings;
+import mrriegel.hudlibrary.worldgui.WorldGui;
+import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
@@ -35,9 +40,14 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.InputEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.relauncher.Side;
 
 @EventBusSubscriber(modid = HUDLibrary.MODID, value = Side.CLIENT)
@@ -53,23 +63,25 @@ public class ClientEvents {
 				GLAllocation.deleteDisplayLists((int) n.getValue());
 			}).build();
 	private static Cache<Integer, Boolean> glIndexes2 = CacheBuilder.newBuilder().//
-			maximumSize(100).expireAfterWrite(250, TimeUnit.MILLISECONDS).build();
+			maximumSize(100).expireAfterWrite(200, TimeUnit.MILLISECONDS).build();
 
 	@SubscribeEvent
 	public static void render(RenderWorldLastEvent event) {
 		Minecraft mc = Minecraft.getMinecraft();
 		EntityPlayer player = mc.player;
 		Vec3d pp = player.getPositionEyes(event.getPartialTicks());
+		Vec3d see = player.getLook(event.getPartialTicks());
 		//		useList = true;
-		mc.world.loadedTileEntityList.stream().filter(t -> {
+		List<TileEntity> l = mc.world.loadedTileEntityList.stream().filter(t -> {
 			return t.hasCapability(HUDCapability.cap, null) && mc.player.getDistanceSq(t.getPos()) < Math.pow(24, 2);
 		}).sorted((b, a) -> {
 			return Double.compare(pp.squareDistanceTo(new Vec3d(a.getPos().getX() + .5, a.getPos().getY() + 1., a.getPos().getZ() + .5)), pp.squareDistanceTo(new Vec3d(b.getPos().getX() + .5, b.getPos().getY() + 1., b.getPos().getZ() + .5)));
-		}).forEachOrdered(t -> {
+		}).collect(Collectors.toList());
+		while (l.size() > HUDLibrary.maxHUDs)
+			l.remove(0);
+		l.forEach(t -> {
 			IHUDProvider hud = t.getCapability(HUDCapability.cap, null);
-			Vec3d v = new Vec3d(t.getPos().getX() + .5, pp.y, t.getPos().getZ() + .5);
-			v = v.subtract(pp);
-			Vec3d see = player.getLook(event.getPartialTicks());
+			Vec3d v = new Vec3d(t.getPos().getX() + .5, pp.y, t.getPos().getZ() + .5).subtract(pp);
 			double angle = Math.toDegrees(Math.acos(see.dotProduct(v.normalize())));
 			if (angle > 100)
 				return;
@@ -176,9 +188,10 @@ public class ClientEvents {
 					GlStateManager.translate(-offsetX, padDown + d.height, 0);
 				}
 			}
-			Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-			if (useList)
+			if (useList) {
+				Minecraft.getMinecraft().getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 				GlStateManager.glEndList();
+			}
 			return glIndex;
 		} catch (ExecutionException e2) {
 			throw new RuntimeException(e2);
@@ -191,6 +204,98 @@ public class ClientEvents {
 		if (event.getEntity() instanceof EntityPlayer && event.getWorld().isRemote) {
 			hudelements.clear();
 			glIndexes.invalidateAll();
+			PlayerSettings.INSTANCE.guis.clear();
+		}
+	}
+
+	@SubscribeEvent
+	public static void tick(ClientTickEvent event) {
+		Minecraft mc = Minecraft.getMinecraft();
+		if (event.phase == Phase.END && mc != null && mc.player != null) {
+			for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+				Vec3d d2 = openGui.b.subtract(openGui.a);
+				Vec3d d3 = openGui.d.subtract(openGui.a);
+				Vec3d n = d2.crossProduct(d3);
+				Vec3d dr = mc.player.getLook(0);
+				double ndot = n.dotProduct(dr);
+				if (Math.abs(ndot) >= 1e-6d) {
+					double t = -n.dotProduct(mc.player.getPositionEyes(0).subtract(openGui.a)) / ndot;
+					Vec3d m = mc.player.getPositionEyes(0).add(dr.scale(t));
+					Vec3d dm = m.subtract(openGui.a);
+					openGui.u = dm.dotProduct(d2);
+					openGui.v = dm.dotProduct(d3);
+					openGui.maxU = d2.dotProduct(d2);
+					openGui.maxV = d3.dotProduct(d3);
+				}
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void click(InputEvent.MouseInputEvent event) {
+		Minecraft mc = Minecraft.getMinecraft();
+		for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+			int wheel = Mouse.getEventDWheel();
+			if (wheel > 0) {
+				PlayerSettings.INSTANCE.scale += .00025;
+				openGui.init();
+				Minecraft.getMinecraft().player.inventory.changeCurrentItem(-wheel);
+			} else if (wheel < 0) {
+				PlayerSettings.INSTANCE.scale -= .00025;
+				openGui.init();
+				Minecraft.getMinecraft().player.inventory.changeCurrentItem(-wheel);
+			}
+			if (Mouse.getEventButtonState() && Mouse.getEventButton() == 1) {
+				if ((openGui.u >= 0.0 && openGui.u <= openGui.maxU && openGui.v >= 0.0 && openGui.v <= openGui.maxV)) {
+					Vec3d see = openGui.guiPos.subtract(openGui.playerPos).scale(.1);
+					Vec3d seeN = see.scale(-1);
+					Vec3d front = openGui.guiPos.add(seeN);
+					Vec3d back = openGui.guiPos.add(see);
+					Vec3d p = mc.player.getPositionEyes(0);
+					if (p.distanceTo(front) < p.distanceTo(back))
+						openGui.click(Mouse.getEventButton(), (int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
+				}
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void render2(RenderWorldLastEvent event) {
+		for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+			double x = openGui.guiPos.x - TileEntityRendererDispatcher.staticPlayerX;
+			double y = openGui.guiPos.y - TileEntityRendererDispatcher.staticPlayerY;
+			double z = openGui.guiPos.z - TileEntityRendererDispatcher.staticPlayerZ;
+			GlStateManager.pushMatrix();
+			GlStateManager.depthMask(false);
+			GlStateManager.translate(x, y, z);
+			double scale = PlayerSettings.INSTANCE.scale;
+			GlStateManager.scale(scale, scale, scale);
+			GlStateManager.rotate(-MathHelper.wrapDegrees(openGui.yaw), 0, 1, 0);
+			GlStateManager.rotate(openGui.pitch, 1, 0, 0);
+			GlStateManager.rotate(180f, 0, 0, 1);
+			double halfWidth = openGui.width / 2d, halfHeight = openGui.height / 2d;
+			GlStateManager.translate(-halfWidth, -halfHeight, 0);
+			int s = 1000;
+			GlStateManager.scale(1, 1, 1. / s);
+			openGui.draw((int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
+			GlStateManager.scale(1, 1, s);
+			GlStateManager.depthMask(true);
+			GlStateManager.popMatrix();
+		}
+	}
+
+	@SubscribeEvent
+	public static void rightclick(RightClickBlock event) {
+		if (!event.getEntityPlayer().isSneaking() && event.getWorld().isRemote) {
+			TileEntity tile = event.getWorld().getTileEntity(event.getPos());
+			if (tile != null && tile.hasCapability(WorldGuiCapability.cap, event.getFace())) {
+				WorldGui gui = tile.getCapability(WorldGuiCapability.cap, event.getFace()).openGui(event.getEntityPlayer());
+				if (gui != null) {
+					gui.init();
+					PlayerSettings.INSTANCE.guis.add(gui);
+					event.setUseBlock(Result.DENY);
+				}
+			}
 		}
 	}
 }

@@ -17,6 +17,9 @@ import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
+import mrriegel.hudlibrary.worldgui.IWorldGuiProvider;
+import mrriegel.hudlibrary.worldgui.WorldGui;
+import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -26,6 +29,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.tileentity.TileEntityFurnace;
+import net.minecraft.tileentity.TileEntityMobSpawner;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
@@ -60,20 +64,23 @@ public class HUDLibrary {
 	public static SimpleNetworkWrapper snw;
 
 	public static boolean useList;
+	public static int maxHUDs;
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		Configuration config = new Configuration(event.getSuggestedConfigurationFile());
 		config.load();
-		useList = config.getBoolean("useGLList", Configuration.CATEGORY_CLIENT, true, "Use OpenGL Display Lists");
+		useList = config.getBoolean("useGLList", Configuration.CATEGORY_CLIENT, false, "Use OpenGL Display Lists" + Configuration.NEW_LINE + //
+				"Better performance but visual bugs may occur");
+		maxHUDs = config.getInt("maxHUDs", Configuration.CATEGORY_CLIENT, 10, 1, 100, "Max amount of HUDs rendering simultaneously");
 		if (config.hasChanged())
 			config.save();
 		HUDCapability.register();
+		WorldGuiCapability.register();
 		dev = (boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment");
 		int index = 0;
 		snw = new SimpleNetworkWrapper(MODID);
 		snw.registerMessage(HUDSyncMessage.class, HUDSyncMessage.class, index++, Side.CLIENT);
-
 	}
 
 	@EventHandler
@@ -269,6 +276,8 @@ public class HUDLibrary {
 					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
 						Random k = new Random(tile.getPos().toLong());
+						if (true)
+							return 0x88000000 | (0x00FFFFFF & k.nextInt());
 						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
 						if (true)
 							return c.getRGB();
@@ -294,6 +303,29 @@ public class HUDLibrary {
 					return null;
 				}
 
+			});
+		} else if (event.getObject() instanceof TileEntityMobSpawner) {
+			event.addCapability(new ResourceLocation(MODID, "kip"), new ICapabilityProvider() {
+				TileEntityMobSpawner tile = (TileEntityMobSpawner) event.getObject();
+				IWorldGuiProvider pro = new IWorldGuiProvider() {
+
+					@Override
+					public WorldGui openGui(EntityPlayer player) {
+						return new WorldGui();
+					}
+				};
+
+				@Override
+				public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
+					return capability == WorldGuiCapability.cap;
+				}
+
+				@Override
+				public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+					if (hasCapability(capability, facing))
+						return (T) pro;
+					return null;
+				}
 			});
 		}
 	}
