@@ -25,8 +25,8 @@ public interface IHUDProvider {
 		return 1;
 	}
 
-	default boolean isVisible(EntityPlayer player, EnumFacing facing, TileEntity tile) {
-		return tile.getPos().getDistance((int) player.posX, (int) player.posY, (int) player.posZ) <= 24;
+	default boolean isVisible(EntityPlayer player, EnumFacing facing) {
+		return true;
 	}
 
 	List<HUDElement> getElements(EntityPlayer player, EnumFacing facing);
@@ -38,7 +38,7 @@ public interface IHUDProvider {
 	}
 
 	default int width(EntityPlayer player, EnumFacing facing) {
-		return 100;
+		return 120;
 	}
 
 	default boolean needsSync() {

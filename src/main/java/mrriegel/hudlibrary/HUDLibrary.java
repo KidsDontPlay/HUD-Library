@@ -12,13 +12,13 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.HUDCapability;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
+import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
@@ -29,6 +29,8 @@ import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.RayTraceResult.Type;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
@@ -41,8 +43,6 @@ import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
-import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 
@@ -59,10 +59,13 @@ public class HUDLibrary {
 
 	public static SimpleNetworkWrapper snw;
 
+	public static boolean useList;
+
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
 		Configuration config = new Configuration(event.getSuggestedConfigurationFile());
 		config.load();
+		useList = config.getBoolean("useGLList", Configuration.CATEGORY_CLIENT, true, "Use OpenGL Display Lists");
 		if (config.hasChanged())
 			config.save();
 		HUDCapability.register();
@@ -78,15 +81,6 @@ public class HUDLibrary {
 	}
 
 	@SubscribeEvent
-	public static void tick(PlayerTickEvent event) {
-		if (event.side.isServer() && event.phase == Phase.END) {
-			if (event.player.ticksExisted % 8 == 0) {
-				snw.sendTo(new HUDSyncMessage(event.player), (EntityPlayerMP) event.player);
-			}
-		}
-	}
-
-	@SubscribeEvent
 	public static void attach(AttachCapabilitiesEvent<TileEntity> event) {
 		if (!dev)
 			return;
@@ -98,14 +92,16 @@ public class HUDLibrary {
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						//						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						//						lis.add(new HUDText("moon", false));
+						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDText("sun", false));
 						//						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
 						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
 						Random ran = new Random(facing.name().hashCode() ^ tile.getPos().hashCode());
 						for (int i = 0; i < 5; i++) {
 							HUDProgressBar bar = new HUDProgressBar(-1, 14, 0x44098765, new Color(ran.nextInt(256), ran.nextInt(256), ran.nextInt(256), 0xFF).getRGB());
 							bar.setFilling(ran.nextDouble() / 2 + .5);
-							lis.add(bar);
+							//							lis.add(bar);
 						}
 						return lis;
 					}
@@ -146,7 +142,7 @@ public class HUDLibrary {
 
 					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
-						if (!true)
+						if (true)
 							return 0x88AA1144;
 						Random k = new Random(tile.getPos().toString().hashCode());
 						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
@@ -173,7 +169,7 @@ public class HUDLibrary {
 					public double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 						//						if (axis == Axis.NORMAL)
 						//							return Math.sin(player.ticksExisted / 9.);
-						if (axis == Axis.VERTICAL)
+						if (axis == Axis.VERTICAL && false)
 							return 2;
 						if (true)
 							return 0;
@@ -187,18 +183,28 @@ public class HUDLibrary {
 					@Override
 					public int width(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 100;
+							return 120;
 						return (int) ((MathHelper.sin(player.ticksExisted / 19f) + 2) * 50);
 					}
 
 					@Override
 					public int getMargin(Direction dir) {
-						return 30;
+						return 2;
 					}
 
 					@Override
 					public boolean is360degrees(EntityPlayer player) {
 						return IHUDProvider.super.is360degrees(player) ^ !true;
+					}
+
+					@Override
+					public boolean isVisible(EntityPlayer player, EnumFacing facing) {
+						if (true)
+							return true;
+						RayTraceResult rtr = Minecraft.getMinecraft().objectMouseOver;
+						if (rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos() != null)
+							return rtr.getBlockPos().equals(tile.getPos());
+						return false;
 					}
 				};
 
@@ -220,15 +226,20 @@ public class HUDLibrary {
 				TileEntityChest tile = (TileEntityChest) event.getObject();
 				IHUDProvider pro = new IHUDProvider() {
 
+					List<HUDElement> l = null;
+
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
 						lis.add(new HUDText("samba", false));
-						List<HUDElement> list = new ArrayList<>();
-						for (int i = 0; i < tile.getSizeInventory(); i++) {
-							list.add(new HUDItemStack(ItemStack.EMPTY));
+						//												l = null;
+						if (l == null || player.world.rand.nextDouble() < .02) {
+							l = new ArrayList<>();
+							for (int i = 0; i < tile.getSizeInventory(); i++) {
+								l.add(new HUDItemStack(ItemStack.EMPTY));
+							}
 						}
-						//						lis.add(new HUDCompound(true, list));
+						lis.add(new HUDCompound(true, l));
 						return lis;
 					}
 

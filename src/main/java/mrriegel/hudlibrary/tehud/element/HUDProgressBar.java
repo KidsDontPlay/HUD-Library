@@ -64,18 +64,18 @@ public class HUDProgressBar extends HUDElement {
 			c1 = c2;
 			c2 = tmp;
 		}
-		int width = this.width < 0 ? maxWidth : this.width;
+		int w = this.width < 0 ? maxWidth : this.width;
 
-		GuiUtils.drawGradientRect(0, 1, 0, width - 1, height - 2, background.getRGB(), background.getRGB());
+		GuiUtils.drawGradientRect(0, 1, 0, w - 1, height - 2, background.getRGB(), background.getRGB());
 		int del = height - 2;
 		int del1 = del / 2;
-		GuiUtils.drawGradientRect(0, 1, 0, (int) ((width - 1) * filling), del1, c2, c1);
-		GuiUtils.drawGradientRect(0, 1, del1, (int) ((width - 1) * filling), del, c1, c2);
+		GuiUtils.drawGradientRect(0, 1, 0, (int) ((w - 1) * filling), del1, c2, c1);
+		GuiUtils.drawGradientRect(0, 1, del1, (int) ((w - 1) * filling), del, c1, c2);
 		//frame
 		GuiUtils.drawGradientRect(0, 0, -1, 1, height - 1, frameColor, frameColor);
-		GuiUtils.drawGradientRect(0, width - 1, -1, width, height - 1, frameColor, frameColor);
-		GuiUtils.drawGradientRect(0, 1, -1, width - 1, 0, frameColor, frameColor);
-		GuiUtils.drawGradientRect(0, 1, height - 2, width - 1, height - 1, frameColor, frameColor);
+		GuiUtils.drawGradientRect(0, w - 1, -1, w, height - 1, frameColor, frameColor);
+		GuiUtils.drawGradientRect(0, 1, -1, w - 1, 0, frameColor, frameColor);
+		GuiUtils.drawGradientRect(0, 1, height - 2, w - 1, height - 1, frameColor, frameColor);
 	}
 
 }

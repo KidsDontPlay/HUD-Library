@@ -144,6 +144,7 @@ public class HUDCompound extends HUDElement {
 			GlStateManager.translate(0, -hei, 0);
 		} else {
 			int width = dimension(maxWidth).width;
+			int height = dimension(maxWidth).height;
 			boolean tooLong = width > maxWidth;
 			double fac = maxWidth / (double) width;
 			if (tooLong) {
@@ -164,10 +165,16 @@ public class HUDCompound extends HUDElement {
 					back += pad;
 					GlStateManager.translate(pad, 0, 0);
 				}
+				Dimension dim = e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
+				int up = 0;
+				int free = height - dim.height - e.getPaddingVertical();
+				if (free > 0)
+					up = (int) Math.ceil(free / (double) 2);
+				GlStateManager.translate(0, up, 0);
 				e.draw(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT));
-				int w = e.dimension(part - e.getPadding(Direction.LEFT) - e.getPadding(Direction.RIGHT)).width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
+				int w = dim.width + e.getPadding(Direction.LEFT) + e.getPadding(Direction.RIGHT);
 				back += w;
-
+				GlStateManager.translate(0, -up, 0);
 				GlStateManager.translate(w, 0, 0);
 			}
 			GlStateManager.translate(0, -down, 0);

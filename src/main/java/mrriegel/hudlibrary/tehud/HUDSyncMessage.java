@@ -30,9 +30,7 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 	public HUDSyncMessage() {
 	}
 
-	public HUDSyncMessage(EntityPlayer player) {
-		BlockPos playerPos = new BlockPos(player);
-		int radius = 7;
+	public HUDSyncMessage(EntityPlayer player, int radius) {
 		try {
 			//		for (BlockPos p : BlockPos.getAllInBox(playerPos.add(-radius, -radius, -radius), playerPos.add(radius, radius, radius))) {
 			//			TileEntity t = player.world.getTileEntity(p);

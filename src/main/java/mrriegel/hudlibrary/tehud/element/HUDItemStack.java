@@ -61,23 +61,20 @@ public class HUDItemStack extends HUDElement {
 	public void draw(int maxWidth) {
 		if (stack.isEmpty())
 			return;
-		//			RenderHelper.enableStandardItemLighting();
 		RenderHelper.enableGUIStandardItemLighting();
 		int s = 1000;
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.depthMask(true);
 		GlStateManager.enableDepth();
 		GlStateManager.pushMatrix();
-		int tr = 0;
-		GlStateManager.translate(0, 0, tr);
 		GlStateManager.scale(1, 1, 1. / s);
 		RenderItem render = Minecraft.getMinecraft().getRenderItem();
 		render.renderItemAndEffectIntoGUI(stack, 0, 0);
-		//			render.renderItem(stack, TransformType.GUI);
-		if (overlay)
+		GlStateManager.enableRescaleNormal();
+		if (overlay) {
 			render.renderItemOverlayIntoGUI(Minecraft.getMinecraft().fontRenderer, stack, 0, 0, null);
+		}
 		GlStateManager.scale(1, 1, s);
-		GlStateManager.translate(0, 0, -tr);
 		GlStateManager.popMatrix();
 		RenderHelper.disableStandardItemLighting();
 	}
