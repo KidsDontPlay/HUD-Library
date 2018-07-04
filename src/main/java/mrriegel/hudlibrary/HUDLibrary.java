@@ -2,6 +2,7 @@ package mrriegel.hudlibrary;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -18,18 +19,21 @@ import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
 import mrriegel.hudlibrary.worldgui.IWorldGuiProvider;
+import mrriegel.hudlibrary.worldgui.NotifyServerMessage;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
+import net.minecraft.tileentity.TileEntityDropper;
 import net.minecraft.tileentity.TileEntityFurnace;
-import net.minecraft.tileentity.TileEntityMobSpawner;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
@@ -40,6 +44,8 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.fml.client.config.GuiButtonExt;
+import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -81,6 +87,7 @@ public class HUDLibrary {
 		int index = 0;
 		snw = new SimpleNetworkWrapper(MODID);
 		snw.registerMessage(HUDSyncMessage.class, HUDSyncMessage.class, index++, Side.CLIENT);
+		snw.registerMessage(NotifyServerMessage.class, NotifyServerMessage.class, index++, Side.SERVER);
 	}
 
 	@EventHandler
@@ -304,14 +311,36 @@ public class HUDLibrary {
 				}
 
 			});
-		} else if (event.getObject() instanceof TileEntityMobSpawner) {
+		} else if (event.getObject() instanceof TileEntityDropper) {
 			event.addCapability(new ResourceLocation(MODID, "kip"), new ICapabilityProvider() {
-				TileEntityMobSpawner tile = (TileEntityMobSpawner) event.getObject();
+				//				TileEntityFlowerPot tile = (TileEntityFlowerPot) event.getObject();
+
 				IWorldGuiProvider pro = new IWorldGuiProvider() {
 
 					@Override
 					public WorldGui openGui(EntityPlayer player) {
-						return new WorldGui();
+						class Gui extends WorldGui {
+							@Override
+							public void draw(int mouseX, int mouseY, float partialTicks) {
+								//						drawBackgroundTexture();
+								GuiUtils.drawGradientRect(0, 0, 0, width, height, 0xEE4399E1, 0xEE4399E1);
+								super.draw(mouseX, mouseY, partialTicks);
+								drawItemstack(new ItemStack(Blocks.EMERALD_BLOCK, 5), 120, 13, !false);
+								GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF4E90E1, 0xFFFF0000);
+								drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
+							}
+
+							@Override
+							public void init() {
+								super.init();
+								buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
+							}
+
+							@Override
+							public void buttonClicked(GuiButton b, int mouse) {
+							}
+						}
+						return new Gui();
 					}
 				};
 

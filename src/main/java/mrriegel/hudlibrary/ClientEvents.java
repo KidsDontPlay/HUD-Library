@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
@@ -22,10 +23,11 @@ import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Axis;
 import mrriegel.hudlibrary.tehud.IHUDProvider.Direction;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
+import mrriegel.hudlibrary.worldgui.NotifyServerMessage;
 import mrriegel.hudlibrary.worldgui.PlayerSettings;
 import mrriegel.hudlibrary.worldgui.WorldGui;
-import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -37,13 +39,12 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
@@ -212,7 +213,18 @@ public class ClientEvents {
 	public static void tick(ClientTickEvent event) {
 		Minecraft mc = Minecraft.getMinecraft();
 		if (event.phase == Phase.END && mc != null && mc.player != null) {
+			if (PlayerSettings.INSTANCE.focusedGui != null && !PlayerSettings.INSTANCE.focusedGui.isFocused()) {
+				PlayerSettings.INSTANCE.focusedGui.onMouseLeave();
+				PlayerSettings.INSTANCE.focusedGui = null;
+				HUDLibrary.snw.sendToServer(new NotifyServerMessage(false));
+				CommonEvents.openWorldGuis.put(mc.player.getUniqueID(), false);
+			}
 			for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+				openGui.update();
+				if (!openGui.isReachable()) {
+					openGui.u = openGui.v = openGui.maxU = openGui.maxV = Integer.MAX_VALUE;
+					continue;
+				}
 				Vec3d d2 = openGui.b.subtract(openGui.a);
 				Vec3d d3 = openGui.d.subtract(openGui.a);
 				Vec3d n = d2.crossProduct(d3);
@@ -227,6 +239,12 @@ public class ClientEvents {
 					openGui.maxU = d2.dotProduct(d2);
 					openGui.maxV = d3.dotProduct(d3);
 				}
+				if (PlayerSettings.INSTANCE.focusedGui == null && openGui.isFocused()) {
+					PlayerSettings.INSTANCE.focusedGui = openGui;
+					openGui.onMouseEnter();
+					HUDLibrary.snw.sendToServer(new NotifyServerMessage(true));
+					CommonEvents.openWorldGuis.put(mc.player.getUniqueID(), true);
+				}
 			}
 		}
 	}
@@ -234,28 +252,27 @@ public class ClientEvents {
 	@SubscribeEvent
 	public static void click(InputEvent.MouseInputEvent event) {
 		Minecraft mc = Minecraft.getMinecraft();
-		for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+		if (PlayerSettings.INSTANCE.focusedGui != null) {
+			WorldGui openGui = PlayerSettings.INSTANCE.focusedGui;
 			int wheel = Mouse.getEventDWheel();
-			if (wheel > 0) {
-				PlayerSettings.INSTANCE.scale += .00025;
-				openGui.init();
-				Minecraft.getMinecraft().player.inventory.changeCurrentItem(-wheel);
-			} else if (wheel < 0) {
-				PlayerSettings.INSTANCE.scale -= .00025;
-				openGui.init();
-				Minecraft.getMinecraft().player.inventory.changeCurrentItem(-wheel);
-			}
-			if (Mouse.getEventButtonState() && Mouse.getEventButton() == 1) {
-				if ((openGui.u >= 0.0 && openGui.u <= openGui.maxU && openGui.v >= 0.0 && openGui.v <= openGui.maxV)) {
-					Vec3d see = openGui.guiPos.subtract(openGui.playerPos).scale(.1);
-					Vec3d seeN = see.scale(-1);
-					Vec3d front = openGui.guiPos.add(seeN);
-					Vec3d back = openGui.guiPos.add(see);
-					Vec3d p = mc.player.getPositionEyes(0);
-					if (p.distanceTo(front) < p.distanceTo(back))
-						openGui.click(Mouse.getEventButton(), (int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
+			if (false) {
+				double scale = PlayerSettings.INSTANCE.scaleMap.getDouble(openGui.getClass());
+				if (wheel > 0) {
+					scale += .00025;
+					openGui.init();
+					mc.player.inventory.changeCurrentItem(-wheel);
+				} else if (wheel < 0) {
+					scale -= .00025;
+					openGui.init();
+					mc.player.inventory.changeCurrentItem(-wheel);
 				}
+				PlayerSettings.INSTANCE.scaleMap.put(openGui.getClass(), scale);
 			}
+			if (Mouse.getEventButton() == 0 || Mouse.getEventButton() == 1)
+				if (Mouse.getEventButtonState())
+					openGui.click(Mouse.getEventButton(), (int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
+				else
+					openGui.release(Mouse.getEventButton(), (int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
 		}
 	}
 
@@ -268,34 +285,35 @@ public class ClientEvents {
 			GlStateManager.pushMatrix();
 			GlStateManager.depthMask(false);
 			GlStateManager.translate(x, y, z);
-			double scale = PlayerSettings.INSTANCE.scale;
+			double scale = PlayerSettings.INSTANCE.scaleMap.getDouble(openGui.getClass());
 			GlStateManager.scale(scale, scale, scale);
 			GlStateManager.rotate(-MathHelper.wrapDegrees(openGui.yaw), 0, 1, 0);
 			GlStateManager.rotate(openGui.pitch, 1, 0, 0);
 			GlStateManager.rotate(180f, 0, 0, 1);
 			double halfWidth = openGui.width / 2d, halfHeight = openGui.height / 2d;
 			GlStateManager.translate(-halfWidth, -halfHeight, 0);
-			int s = 1000;
-			GlStateManager.scale(1, 1, 1. / s);
-			openGui.draw((int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
-			GlStateManager.scale(1, 1, s);
+			GlStateManager.disableLighting();
+			if (openGui == PlayerSettings.INSTANCE.focusedGui) {
+				double k = Math.sin((Minecraft.getMinecraft().player.ticksExisted + event.getPartialTicks()) / 7) / 2. + .5;
+				int ticks = (int) (k * 255);
+				int t = ticks % 255;
+				int color = (0x88 << 24) | (t << 16) | (t << 8) | (t);
+				GuiUtils.drawGradientRect(0, -2, -4, openGui.width + 2, -2, color, color);
+				GuiUtils.drawGradientRect(0, -2, openGui.height + 2, openGui.width + 2, openGui.height + 4, color, color);
+				GuiUtils.drawGradientRect(0, -4, -2, -2, openGui.height + 2, color, color);
+				GuiUtils.drawGradientRect(0, openGui.width + 2, -2, openGui.width + 4, openGui.height + 2, color, color);
+			}
+			openGui.draw((int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v), event.getPartialTicks());
 			GlStateManager.depthMask(true);
 			GlStateManager.popMatrix();
 		}
 	}
 
 	@SubscribeEvent
-	public static void rightclick(RightClickBlock event) {
-		if (!event.getEntityPlayer().isSneaking() && event.getWorld().isRemote) {
-			TileEntity tile = event.getWorld().getTileEntity(event.getPos());
-			if (tile != null && tile.hasCapability(WorldGuiCapability.cap, event.getFace())) {
-				WorldGui gui = tile.getCapability(WorldGuiCapability.cap, event.getFace()).openGui(event.getEntityPlayer());
-				if (gui != null) {
-					gui.init();
-					PlayerSettings.INSTANCE.guis.add(gui);
-					event.setUseBlock(Result.DENY);
-				}
-			}
+	public static void openGui(GuiOpenEvent event) {
+		if (event.getGui() instanceof GuiIngameMenu && Keyboard.isKeyDown(Keyboard.KEY_ESCAPE) && PlayerSettings.INSTANCE.focusedGui != null) {
+			PlayerSettings.INSTANCE.focusedGui.close();
+			event.setCanceled(true);
 		}
 	}
 }
