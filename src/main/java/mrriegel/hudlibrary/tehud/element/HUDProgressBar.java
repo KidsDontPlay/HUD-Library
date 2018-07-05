@@ -23,8 +23,9 @@ public class HUDProgressBar extends HUDElement {
 		return filling;
 	}
 
-	public void setFilling(double filling) {
+	public HUDProgressBar setFilling(double filling) {
 		this.filling = filling;
+		return this;
 	}
 
 	@Override
@@ -32,7 +33,7 @@ public class HUDProgressBar extends HUDElement {
 		Dimension d = dims.get(maxWidth);
 		if (d != null)
 			return d;
-		d = new Dimension(width, height);
+		d = new Dimension(width < 0 ? maxWidth : width, height);
 		dims.put(maxWidth, d);
 		return d;
 	}

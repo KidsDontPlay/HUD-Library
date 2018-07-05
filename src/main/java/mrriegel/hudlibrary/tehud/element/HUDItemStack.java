@@ -14,7 +14,7 @@ public class HUDItemStack extends HUDElement {
 	private static final Dimension dim16 = new Dimension(16, 16);
 	private static final Dimension dim0 = new Dimension();
 
-	private ItemStack stack;
+	private ItemStack stack = ItemStack.EMPTY;
 	private boolean overlay = true;
 	private int customSize = -1;
 
@@ -27,16 +27,18 @@ public class HUDItemStack extends HUDElement {
 		return stack;
 	}
 
-	public void setStack(ItemStack stack) {
+	public HUDItemStack setStack(ItemStack stack) {
 		this.stack = stack;
+		return this;
 	}
 
 	public boolean isOverlay() {
 		return overlay;
 	}
 
-	public void setOverlay(boolean overlay) {
+	public HUDItemStack setOverlay(boolean overlay) {
 		this.overlay = overlay;
+		return this;
 	}
 
 	@Override

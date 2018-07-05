@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.Range;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import mrriegel.hudlibrary.tehud.HUDCapability;
@@ -15,6 +17,7 @@ import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
+import mrriegel.hudlibrary.tehud.element.HUDFluidStack;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
@@ -44,6 +47,8 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod;
@@ -107,7 +112,7 @@ public class HUDLibrary {
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
 						//						lis.add(new HUDText("moon", false));
-						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDCompound(!false, new HUDText("Input: kokablac", false), new HUDItemStack(ItemStack.EMPTY)));
 						lis.add(new HUDText("sun", false));
 						//						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
 						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
@@ -117,6 +122,8 @@ public class HUDLibrary {
 							bar.setFilling(ran.nextDouble() / 2 + .5);
 							//							lis.add(bar);
 						}
+						lis.add(new HUDFluidStack(new FluidStack(FluidRegistry.LAVA, 23), -1, 26));
+						lis.add(new HUDText("geh halt weg und weg", false));
 						return lis;
 					}
 
@@ -183,8 +190,6 @@ public class HUDLibrary {
 					public double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 						//						if (axis == Axis.NORMAL)
 						//							return Math.sin(player.ticksExisted / 9.);
-						if (axis == Axis.VERTICAL && false)
-							return 2;
 						if (true)
 							return 0;
 						if (axis == Axis.HORIZONTAL)
@@ -313,34 +318,13 @@ public class HUDLibrary {
 			});
 		} else if (event.getObject() instanceof TileEntityDropper) {
 			event.addCapability(new ResourceLocation(MODID, "kip"), new ICapabilityProvider() {
-				//				TileEntityFlowerPot tile = (TileEntityFlowerPot) event.getObject();
+				TileEntity tile = event.getObject();
 
 				IWorldGuiProvider pro = new IWorldGuiProvider() {
 
 					@Override
 					public WorldGui openGui(EntityPlayer player) {
-						class Gui extends WorldGui {
-							@Override
-							public void draw(int mouseX, int mouseY, float partialTicks) {
-								//						drawBackgroundTexture();
-								GuiUtils.drawGradientRect(0, 0, 0, width, height, 0xEE4399E1, 0xEE4399E1);
-								super.draw(mouseX, mouseY, partialTicks);
-								drawItemstack(new ItemStack(Blocks.EMERALD_BLOCK, 5), 120, 13, !false);
-								GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF4E90E1, 0xFFFF0000);
-								drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
-							}
-
-							@Override
-							public void init() {
-								super.init();
-								buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
-							}
-
-							@Override
-							public void buttonClicked(GuiButton b, int mouse) {
-							}
-						}
-						return new Gui();
+						return new Gui(tile);
 					}
 				};
 
@@ -359,4 +343,40 @@ public class HUDLibrary {
 		}
 	}
 
+}
+
+class Gui extends WorldGui {
+
+	TileEntity tile;
+
+	public Gui(TileEntity tile) {
+		super();
+		this.tile = tile;
+	}
+
+	@Override
+	public void draw(int mouseX, int mouseY, float partialTicks) {
+		//						drawBackgroundTexture();
+		int color = 0xCC000000 | (0x00FFFFFF & guiPos.hashCode());
+		GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
+		super.draw(mouseX, mouseY, partialTicks);
+		drawItemStack(new ItemStack(Blocks.EMERALD_BLOCK, 5), 120, 13, !false);
+		Random ran = new Random(color);
+		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
+		color = ~color | 0xFF000000;
+		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
+		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
+		if (Range.between(0, 40).contains(mouseX))
+			drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
+	}
+
+	@Override
+	public void init() {
+		super.init();
+		buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
+	}
+
+	@Override
+	public void buttonClicked(GuiButton b, int mouse) {
+	}
 }

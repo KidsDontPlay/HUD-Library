@@ -28,6 +28,7 @@ import mrriegel.hudlibrary.worldgui.PlayerSettings;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiIngameMenu;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -37,9 +38,15 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.client.event.MouseEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
+import net.minecraftforge.client.event.RenderGameOverlayEvent.Pre;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -217,33 +224,15 @@ public class ClientEvents {
 				PlayerSettings.INSTANCE.focusedGui.onMouseLeave();
 				PlayerSettings.INSTANCE.focusedGui = null;
 				HUDLibrary.snw.sendToServer(new NotifyServerMessage(false));
-				CommonEvents.openWorldGuis.put(mc.player.getUniqueID(), false);
+				CommonEvents.openWorldGuis.remove(mc.player.getUniqueID());
 			}
 			for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
 				openGui.update();
-				if (!openGui.isReachable()) {
-					openGui.u = openGui.v = openGui.maxU = openGui.maxV = Integer.MAX_VALUE;
-					continue;
-				}
-				Vec3d d2 = openGui.b.subtract(openGui.a);
-				Vec3d d3 = openGui.d.subtract(openGui.a);
-				Vec3d n = d2.crossProduct(d3);
-				Vec3d dr = mc.player.getLook(0);
-				double ndot = n.dotProduct(dr);
-				if (Math.abs(ndot) >= 1e-6d) {
-					double t = -n.dotProduct(mc.player.getPositionEyes(0).subtract(openGui.a)) / ndot;
-					Vec3d m = mc.player.getPositionEyes(0).add(dr.scale(t));
-					Vec3d dm = m.subtract(openGui.a);
-					openGui.u = dm.dotProduct(d2);
-					openGui.v = dm.dotProduct(d3);
-					openGui.maxU = d2.dotProduct(d2);
-					openGui.maxV = d3.dotProduct(d3);
-				}
 				if (PlayerSettings.INSTANCE.focusedGui == null && openGui.isFocused()) {
 					PlayerSettings.INSTANCE.focusedGui = openGui;
 					openGui.onMouseEnter();
 					HUDLibrary.snw.sendToServer(new NotifyServerMessage(true));
-					CommonEvents.openWorldGuis.put(mc.player.getUniqueID(), true);
+					CommonEvents.openWorldGuis.add(mc.player.getUniqueID());
 				}
 			}
 		}
@@ -251,23 +240,8 @@ public class ClientEvents {
 
 	@SubscribeEvent
 	public static void click(InputEvent.MouseInputEvent event) {
-		Minecraft mc = Minecraft.getMinecraft();
 		if (PlayerSettings.INSTANCE.focusedGui != null) {
 			WorldGui openGui = PlayerSettings.INSTANCE.focusedGui;
-			int wheel = Mouse.getEventDWheel();
-			if (false) {
-				double scale = PlayerSettings.INSTANCE.scaleMap.getDouble(openGui.getClass());
-				if (wheel > 0) {
-					scale += .00025;
-					openGui.init();
-					mc.player.inventory.changeCurrentItem(-wheel);
-				} else if (wheel < 0) {
-					scale -= .00025;
-					openGui.init();
-					mc.player.inventory.changeCurrentItem(-wheel);
-				}
-				PlayerSettings.INSTANCE.scaleMap.put(openGui.getClass(), scale);
-			}
 			if (Mouse.getEventButton() == 0 || Mouse.getEventButton() == 1)
 				if (Mouse.getEventButtonState())
 					openGui.click(Mouse.getEventButton(), (int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v));
@@ -277,8 +251,53 @@ public class ClientEvents {
 	}
 
 	@SubscribeEvent
+	public static void mouse(MouseEvent event) {
+		if (PlayerSettings.INSTANCE.focusedGui != null && event.getDwheel() != 0 && Minecraft.getMinecraft().player.isSneaking()) {
+			WorldGui openGui = PlayerSettings.INSTANCE.focusedGui;
+			double scale = PlayerSettings.INSTANCE.scaleMap.getDouble(openGui.getClass());
+			if (event.getDwheel() > 0) {
+				scale += .00025;
+				openGui.init();
+			} else if (event.getDwheel() < 0) {
+				scale -= .00025;
+				openGui.init();
+			}
+			scale = MathHelper.clamp(scale, .002, .02);
+			PlayerSettings.INSTANCE.scaleMap.put(openGui.getClass(), scale);
+			event.setCanceled(true);
+		}
+	}
+
+	@SubscribeEvent
 	public static void render2(RenderWorldLastEvent event) {
-		for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
+		Minecraft mc = Minecraft.getMinecraft();
+		Vec3d pp = mc.player.getPositionEyes(event.getPartialTicks());
+		Vec3d see = mc.player.getLook(event.getPartialTicks());
+		PlayerSettings.INSTANCE.guis.stream().filter(g -> g.isInFront() && pp.distanceTo(g.guiPos) < g.maxRenderDistance()).sorted((b, a) -> {
+			return Double.compare(pp.distanceTo(a.guiPos), pp.distanceTo(b.guiPos));
+		}).peek(openGui -> {
+			if (!openGui.isReachable()) {
+				openGui.u = openGui.v = openGui.maxU = openGui.maxV = Integer.MAX_VALUE;
+				return;
+			}
+			Vec3d d2 = openGui.b.subtract(openGui.a);
+			Vec3d d3 = openGui.d.subtract(openGui.a);
+			Vec3d n = d2.crossProduct(d3);
+			Vec3d dr = mc.player.getLook(event.getPartialTicks());
+			double ndot = n.dotProduct(dr);
+			if (Math.abs(ndot) >= 1e-6d) {
+				double t = -n.dotProduct(mc.player.getPositionEyes(event.getPartialTicks()).subtract(openGui.a)) / ndot;
+				Vec3d m = mc.player.getPositionEyes(event.getPartialTicks()).add(dr.scale(t));
+				Vec3d dm = m.subtract(openGui.a);
+				openGui.u = dm.dotProduct(d2);
+				openGui.v = dm.dotProduct(d3);
+				openGui.maxU = d2.dotProduct(d2);
+				openGui.maxV = d3.dotProduct(d3);
+			}
+		}).forEachOrdered(openGui -> {
+			double angle = Math.toDegrees(Math.acos(see.dotProduct(openGui.guiPos.subtract(pp).normalize())));
+			if (angle > 100)
+				return;
 			double x = openGui.guiPos.x - TileEntityRendererDispatcher.staticPlayerX;
 			double y = openGui.guiPos.y - TileEntityRendererDispatcher.staticPlayerY;
 			double z = openGui.guiPos.z - TileEntityRendererDispatcher.staticPlayerZ;
@@ -294,7 +313,7 @@ public class ClientEvents {
 			GlStateManager.translate(-halfWidth, -halfHeight, 0);
 			GlStateManager.disableLighting();
 			if (openGui == PlayerSettings.INSTANCE.focusedGui) {
-				double k = Math.sin((Minecraft.getMinecraft().player.ticksExisted + event.getPartialTicks()) / 7) / 2. + .5;
+				double k = Math.sin((mc.player.ticksExisted + event.getPartialTicks()) / 7) / 2. + .5;
 				int ticks = (int) (k * 255);
 				int t = ticks % 255;
 				int color = (0x88 << 24) | (t << 16) | (t << 8) | (t);
@@ -303,10 +322,17 @@ public class ClientEvents {
 				GuiUtils.drawGradientRect(0, -4, -2, -2, openGui.height + 2, color, color);
 				GuiUtils.drawGradientRect(0, openGui.width + 2, -2, openGui.width + 4, openGui.height + 2, color, color);
 			}
-			openGui.draw((int) ((openGui.width / openGui.maxU) * openGui.u), (int) ((openGui.height / openGui.maxV) * openGui.v), event.getPartialTicks());
+			int mouseX = (int) ((openGui.width / openGui.maxU) * openGui.u), mouseY = (int) ((openGui.height / openGui.maxV) * openGui.v);
+			openGui.draw(mouseX, mouseY, event.getPartialTicks());
+			if (openGui.isFocused()) {
+				mc.getTextureManager().bindTexture(crosshairTex);
+				GlStateManager.color(1f, 1f, 1f, 1f);
+				GlStateManager.disableLighting();
+				GuiUtils.drawTexturedModalRect(mouseX, mouseY, 0, 0, 16, 16, 0);
+			}
 			GlStateManager.depthMask(true);
 			GlStateManager.popMatrix();
-		}
+		});
 	}
 
 	@SubscribeEvent
@@ -315,5 +341,37 @@ public class ClientEvents {
 			PlayerSettings.INSTANCE.focusedGui.close();
 			event.setCanceled(true);
 		}
+	}
+
+	private static final ResourceLocation crosshairTex = new ResourceLocation(HUDLibrary.MODID, "textures/gui/crosshair.png");
+
+	@SubscribeEvent
+	public static void crosshair(RenderGameOverlayEvent event) {
+		if (event instanceof Pre && event.getType() == ElementType.CROSSHAIRS && PlayerSettings.INSTANCE.focusedGui != null) {
+			event.setCanceled(true);
+			if (true)
+				return;
+			Minecraft mc = Minecraft.getMinecraft();
+			mc.getTextureManager().bindTexture(crosshairTex);
+			GlStateManager.enableBlend();
+			ScaledResolution sr = event.getResolution();
+			if (mc.gameSettings.thirdPersonView == 0) {
+				int l = sr.getScaledWidth();
+				int i1 = sr.getScaledHeight();
+				if (!mc.gameSettings.hideGUI) {
+					//					GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+					GlStateManager.enableAlpha();
+					GlStateManager.color(1f, 1f, 1f, Mouse.getEventButtonState() ? 1f : .6f);
+					GuiUtils.drawTexturedModalRect(l / 2 - 0, i1 / 2 - 0, 0, 0, 16, 16, 0);
+					GlStateManager.color(1f, 1f, 1f, 1f);
+				}
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void highlight(DrawBlockHighlightEvent event) {
+		if (PlayerSettings.INSTANCE.focusedGui != null)
+			event.setCanceled(true);
 	}
 }

@@ -6,10 +6,10 @@ import java.util.List;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
+import mrriegel.hudlibrary.ClientHelper;
 import mrriegel.hudlibrary.CommonEvents;
 import mrriegel.hudlibrary.HUDLibrary;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
@@ -19,9 +19,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
-public class WorldGui extends Gui {
+public class WorldGui {
 
 	private static final ResourceLocation TEX = new ResourceLocation("textures/gui/demo_background.png");
 
@@ -31,8 +32,10 @@ public class WorldGui extends Gui {
 	public final float yaw, pitch;
 	public double u, v, maxU, maxV;
 
-	private GuiScreen screen;
+	private final GuiScreen screen;
 	protected GuiButton selectedButton;
+	private final Vec3d front;
+	private final Vec3d back;
 
 	public List<GuiButton> buttons = new ArrayList<>();
 
@@ -46,6 +49,10 @@ public class WorldGui extends Gui {
 		guiPos = mc.player.getLook(0).add(playerPos);
 		yaw = mc.player.rotationYaw;
 		pitch = mc.player.rotationPitch;
+		Vec3d see = guiPos.subtract(playerPos).scale(.1);
+		Vec3d seeN = see.scale(-1);
+		front = guiPos.add(seeN);
+		back = guiPos.add(see);
 	}
 
 	public void init() {
@@ -83,17 +90,17 @@ public class WorldGui extends Gui {
 		return guiPos.distanceTo(mc.player.getPositionVector()) < mc.player.getEntityAttribute(EntityPlayer.REACH_DISTANCE).getAttributeValue() && isInFront();
 	}
 
-	private boolean isInFront() {
-		Vec3d see = guiPos.subtract(playerPos).scale(.1);
-		Vec3d seeN = see.scale(-1);
-		Vec3d front = guiPos.add(seeN);
-		Vec3d back = guiPos.add(see);
+	public boolean isInFront() {
 		Vec3d p = mc.player.getPositionEyes(0);
 		return p.distanceTo(front) < p.distanceTo(back);
 	}
 
 	public boolean isFocused() {
 		return u >= 0 && u <= maxU && v >= 0 && v <= maxV && isReachable();
+	}
+
+	public double maxRenderDistance() {
+		return 10;
 	}
 
 	public void buttonClicked(GuiButton b, int mouse) {
@@ -112,7 +119,7 @@ public class WorldGui extends Gui {
 	}
 
 	public boolean tooFarAway() {
-		return mc.player.getPositionVector().distanceTo(guiPos) > 8;
+		return mc.player.getPositionVector().distanceTo(guiPos) > 8 && false;
 	}
 
 	public final void close() {
@@ -121,27 +128,29 @@ public class WorldGui extends Gui {
 		if (PlayerSettings.INSTANCE.focusedGui == this) {
 			PlayerSettings.INSTANCE.focusedGui = null;
 			HUDLibrary.snw.sendToServer(new NotifyServerMessage(false));
-			CommonEvents.openWorldGuis.put(mc.player.getUniqueID(), false);
+			CommonEvents.openWorldGuis.remove(mc.player.getUniqueID());
 		}
 	}
 
 	//HELPER START
-	protected void drawItemstack(ItemStack stack, int x, int y, boolean overlay) {
+	protected void drawItemStack(ItemStack stack, int x, int y, boolean overlay) {
 		RenderHelper.enableGUIStandardItemLighting();
-		int s = 1000;
-		GlStateManager.scale(1, 1, 1. / s);
+		pre();
 		mc.getRenderItem().renderItemAndEffectIntoGUI(stack, x, y);
 		if (overlay)
 			mc.getRenderItem().renderItemOverlayIntoGUI(mc.fontRenderer, stack, x, y, null);
-		GlStateManager.scale(1, 1, s);
+		post();
 		RenderHelper.disableStandardItemLighting();
 	}
 
+	protected void drawFluidStack(FluidStack stack, int x, int y, int w, int h) {
+		ClientHelper.drawFluidStack(stack, x, y, w, h);
+	}
+
 	protected void drawTooltip(List<String> lines, int mouseX, int mouseY) {
-		int s = 1000;
-		GlStateManager.scale(1, 1, 1. / s);
+		pre();
 		GuiUtils.drawHoveringText(lines, MathHelper.clamp(mouseX, 0, width), MathHelper.clamp(mouseY, 0, height), width, height, -1, mc.fontRenderer);
-		GlStateManager.scale(1, 1, s);
+		post();
 	}
 
 	protected void drawTooltip(ItemStack stack, int mouseX, int mouseY) {
@@ -151,11 +160,19 @@ public class WorldGui extends Gui {
 	protected void drawBackgroundTexture(int x, int y, int w, int h) {
 		mc.getTextureManager().bindTexture(TEX);
 		GlStateManager.color(1f, 1f, 1f, 1f);
-		GuiUtils.drawContinuousTexturedBox(x, y, 0, 0, w, h, 248, 166, 4, zLevel);
+		GuiUtils.drawContinuousTexturedBox(x, y, 0, 0, w, h, 248, 166, 4, 0);
 	}
 
 	protected void drawBackgroundTexture() {
 		drawBackgroundTexture(0, 0, width, height);
+	}
+
+	protected void pre() {
+		GlStateManager.scale(1, 1, .001);
+	}
+
+	protected void post() {
+		GlStateManager.scale(1, 1, 1000);
 	}
 	//HELPER END
 

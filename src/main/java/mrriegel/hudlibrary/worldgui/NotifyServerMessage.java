@@ -21,7 +21,10 @@ public class NotifyServerMessage implements IMessage, IMessageHandler<NotifyServ
 	@Override
 	public IMessage onMessage(NotifyServerMessage message, MessageContext ctx) {
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			CommonEvents.openWorldGuis.put(ctx.getServerHandler().player.getUniqueID(), message.openGui);
+			if (message.openGui)
+				CommonEvents.openWorldGuis.add(ctx.getServerHandler().player.getUniqueID());
+			else
+				CommonEvents.openWorldGuis.remove(ctx.getServerHandler().player.getUniqueID());
 		});
 		return null;
 	}

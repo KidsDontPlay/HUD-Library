@@ -12,22 +12,49 @@ public class HUDText extends HUDElement {
 	private String text;
 	private boolean shadow, unicode;
 	private final boolean lineBreak;
-	private final FontRenderer fr;
+	private final FontRenderer fr = Minecraft.getMinecraft().fontRenderer;
 	private int color = 0xFFCCCCCC;
 
 	public HUDText(String text, boolean lineBreak) {
 		super();
 		this.text = text;
 		this.lineBreak = lineBreak;
-		this.fr = Minecraft.getMinecraft().fontRenderer;
 	}
 
 	public String getText() {
 		return text;
 	}
 
-	public void setText(String text) {
+	public HUDText setText(String text) {
 		this.text = text;
+		return this;
+	}
+
+	public boolean isShadow() {
+		return shadow;
+	}
+
+	public HUDText setShadow(boolean shadow) {
+		this.shadow = shadow;
+		return this;
+	}
+
+	public boolean isUnicode() {
+		return unicode;
+	}
+
+	public HUDText setUnicode(boolean unicode) {
+		this.unicode = unicode;
+		return this;
+	}
+
+	public int getColor() {
+		return color;
+	}
+
+	public HUDText setColor(int color) {
+		this.color = color;
+		return this;
 	}
 
 	@Override

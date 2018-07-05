@@ -1,8 +1,9 @@
 package mrriegel.hudlibrary;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
-import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
@@ -24,7 +25,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 @EventBusSubscriber(modid = HUDLibrary.MODID)
 public class CommonEvents {
 
-	public static Object2BooleanOpenHashMap<UUID> openWorldGuis = new Object2BooleanOpenHashMap<>();
+	public static Set<UUID> openWorldGuis = new HashSet<>();
 
 	@SubscribeEvent
 	public static void tick(PlayerTickEvent event) {
@@ -42,9 +43,9 @@ public class CommonEvents {
 		}
 	}
 
-	@SubscribeEvent(priority=EventPriority.HIGH)
+	@SubscribeEvent(priority = EventPriority.HIGH)
 	public static void interact(PlayerInteractEvent event) {
-		if (openWorldGuis.getBoolean(event.getEntityPlayer().getUniqueID())) {
+		if (openWorldGuis.contains(event.getEntityPlayer().getUniqueID())) {
 			if (event.isCancelable())
 				event.setCanceled(true);
 			event.setResult(Result.DENY);
