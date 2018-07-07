@@ -67,10 +67,6 @@ public class HUDSyncMessage implements IMessage, IMessageHandler<HUDSyncMessage,
 	public IMessage onMessage(HUDSyncMessage message, MessageContext ctx) {
 		Map<DirectionPos, NBTTagCompound> map = message.map;
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			for (Entry<DirectionPos, NBTTagCompound> e : ClientEvents.hudelements.entrySet()) {
-				ClientEvents.lasthudelements.put(e.getKey(), e.getValue().copy());
-			}
-			//			ClientEvents.hudelements = map;
 			ClientEvents.hudelements.putAll(map);
 		});
 		return null;

@@ -17,18 +17,26 @@ import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.tehud.IHUDProvider;
 import mrriegel.hudlibrary.tehud.element.HUDCompound;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
-import mrriegel.hudlibrary.tehud.element.HUDFluidStack;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
 import mrriegel.hudlibrary.worldgui.IWorldGuiProvider;
-import mrriegel.hudlibrary.worldgui.NotifyServerMessage;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
+import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
+import mrriegel.hudlibrary.worldgui.message.CloseGuiMessage;
+import mrriegel.hudlibrary.worldgui.message.NotifyServerMessage;
+import mrriegel.hudlibrary.worldgui.message.OpenGuiMessage;
+import mrriegel.hudlibrary.worldgui.message.SlotClickMessage;
+import mrriegel.hudlibrary.worldgui.message.SyncContainerToClientMessage;
+import mrriegel.hudlibrary.worldgui.message.SyncPlayerInventoryMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Blocks;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
@@ -39,6 +47,7 @@ import net.minecraft.tileentity.TileEntityDropper;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.RayTraceResult.Type;
@@ -47,14 +56,13 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.fluids.FluidRegistry;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fml.client.config.GuiButtonExt;
 import net.minecraftforge.fml.client.config.GuiUtils;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
+import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -76,6 +84,9 @@ public class HUDLibrary {
 
 	public static boolean useList;
 	public static int maxHUDs;
+	
+	@SidedProxy(serverSide="mrriegel.hudlibrary.CommonProxy",clientSide="mrriegel.hudlibrary.ClientProxy")
+	public static CommonProxy proxy;
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
@@ -93,6 +104,12 @@ public class HUDLibrary {
 		snw = new SimpleNetworkWrapper(MODID);
 		snw.registerMessage(HUDSyncMessage.class, HUDSyncMessage.class, index++, Side.CLIENT);
 		snw.registerMessage(NotifyServerMessage.class, NotifyServerMessage.class, index++, Side.SERVER);
+		snw.registerMessage(SyncPlayerInventoryMessage.class, SyncPlayerInventoryMessage.class, index++, Side.SERVER);
+		snw.registerMessage(SyncContainerToClientMessage.class, SyncContainerToClientMessage.class, index++, Side.CLIENT);
+		snw.registerMessage(OpenGuiMessage.class, OpenGuiMessage.class, index++, Side.SERVER);
+		snw.registerMessage(CloseGuiMessage.class, CloseGuiMessage.class, index++, Side.SERVER);
+		snw.registerMessage(SlotClickMessage.class, SlotClickMessage.class, index++, Side.SERVER);
+		ClientRegistry.registerKeyBinding(ClientEvents.OPENWORLDGUI);
 	}
 
 	@EventHandler
@@ -112,18 +129,19 @@ public class HUDLibrary {
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
 						//						lis.add(new HUDText("moon", false));
-						lis.add(new HUDCompound(!false, new HUDText("Input: kokablac", false), new HUDItemStack(ItemStack.EMPTY)));
-						lis.add(new HUDText("sun", false));
+						//						lis.add(new HUDCompound(!false, new HUDText("Input: kokablac", false), new HUDItemStack(ItemStack.EMPTY)));
+						//						lis.add(new HUDText("sun", false));
 						//						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
-						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
+						//						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
 						Random ran = new Random(facing.name().hashCode() ^ tile.getPos().hashCode());
 						for (int i = 0; i < 5; i++) {
 							HUDProgressBar bar = new HUDProgressBar(-1, 14, 0x44098765, new Color(ran.nextInt(256), ran.nextInt(256), ran.nextInt(256), 0xFF).getRGB());
 							bar.setFilling(ran.nextDouble() / 2 + .5);
 							//							lis.add(bar);
 						}
-						lis.add(new HUDFluidStack(new FluidStack(FluidRegistry.LAVA, 23), -1, 26));
-						lis.add(new HUDText("geh halt weg und weg", false));
+						//						lis.add(new HUDFluidStack(new FluidStack(FluidRegistry.LAVA, 23), -1, 26));
+						//						lis.add(new HUDText("geh halt weg und weg", false));
+						lis.add(new HUDItemStack(new ItemStack(Blocks.CHEST, 64)).setPadding(58));
 						return lis;
 					}
 
@@ -240,9 +258,9 @@ public class HUDLibrary {
 				}
 
 			});
-		} else if (event.getObject() instanceof TileEntityChest) {
+		} else if (event.getObject() instanceof TileEntityDropper) {
 			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
-				TileEntityChest tile = (TileEntityChest) event.getObject();
+				TileEntityDropper tile = (TileEntityDropper) event.getObject();
 				IHUDProvider pro = new IHUDProvider() {
 
 					List<HUDElement> l = null;
@@ -266,7 +284,7 @@ public class HUDLibrary {
 					public Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
 						Int2ObjectMap<Function<TileEntity, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
 						map.put(1, t -> {
-							TileEntityChest tile = (TileEntityChest) t;
+							TileEntityDropper tile = (TileEntityDropper) t;
 							NBTTagList lis = new NBTTagList();
 							for (int i = 0; i < tile.getSizeInventory(); i++) {
 								NBTTagCompound nbt = new NBTTagCompound();
@@ -316,15 +334,79 @@ public class HUDLibrary {
 				}
 
 			});
-		} else if (event.getObject() instanceof TileEntityDropper) {
+		} else if (event.getObject() instanceof TileEntityChest) {
 			event.addCapability(new ResourceLocation(MODID, "kip"), new ICapabilityProvider() {
 				TileEntity tile = event.getObject();
 
 				IWorldGuiProvider pro = new IWorldGuiProvider() {
 
 					@Override
-					public WorldGui openGui(EntityPlayer player) {
-						return new Gui(tile);
+					public WorldGui getGui(EntityPlayer player, BlockPos pos) {
+						return new Gui((TileEntityChest) tile);
+					}
+
+					@Override
+					public WorldGuiContainer getContainer(EntityPlayer player, BlockPos pos) {
+						return new WorldGuiContainer(player) {
+							{
+//								if(player.world.isRemote)System.out.println(this);
+								int h = 10;
+								for (int i = 0; i < ((IInventory) tile).getSizeInventory(); i++) {
+									ItemStack s = ((IInventory) tile).getStackInSlot(i);
+									if(!s.isEmpty()&&false)
+										System.out.println(s);
+								}
+								for (int j = 0; j < 3; ++j) {
+									for (int k = 0; k < 9; ++k) {
+										addSlotToContainer(new Slot((IInventory) tile, k + j * 9, 8 + k * 18, 5 + j * 18));
+									}
+								}
+								for (int l = 0; l < 3; ++l) {
+									for (int j1 = 0; j1 < 9; ++j1) {
+										addSlotToContainer(new Slot(player.inventory, j1 + l * 9 + 9, 8 + j1 * 18, h + 55 + l * 18 + 0));
+									}
+								}
+
+								for (int i1 = 0; i1 < 9; ++i1) {
+									addSlotToContainer(new Slot(player.inventory, i1, 8 + i1 * 18, h + 58 + 55 + 0));
+								}
+							}
+							
+							@Override
+							public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
+								 ItemStack itemstack = ItemStack.EMPTY;
+							        Slot slot = this.inventorySlots.get(index);
+
+							        if (slot != null && slot.getHasStack())
+							        {
+							            ItemStack itemstack1 = slot.getStack();
+							            itemstack = itemstack1.copy();
+
+							            if (index < 3 * 9)
+							            {
+							                if (!this.mergeItemStack(itemstack1, 3 * 9, this.inventorySlots.size(), true))
+							                {
+							                    return ItemStack.EMPTY;
+							                }
+							            }
+							            else if (!this.mergeItemStack(itemstack1, 0, 3 * 9, false))
+							            {
+							                return ItemStack.EMPTY;
+							            }
+
+							            if (itemstack1.isEmpty())
+							            {
+							                slot.putStack(ItemStack.EMPTY);
+							            }
+							            else
+							            {
+							                slot.onSlotChanged();
+							            }
+							        }
+
+							        return itemstack;
+							}
+						};
 					}
 				};
 
@@ -343,40 +425,83 @@ public class HUDLibrary {
 		}
 	}
 
+	public static void drop(EntityPlayer player) {
+		InventoryPlayer inventoryplayer = player.inventory;
+		if (!inventoryplayer.getItemStack().isEmpty()) {
+			player.dropItem(inventoryplayer.getItemStack(), false);
+			inventoryplayer.setItemStack(ItemStack.EMPTY);
+			player.openContainer.detectAndSendChanges();
+		}
+	}
 }
 
 class Gui extends WorldGui {
 
-	TileEntity tile;
+	TileEntityChest tile;
 
-	public Gui(TileEntity tile) {
+	public Gui(TileEntityChest tile) {
 		super();
 		this.tile = tile;
+		this.width = 180;
 	}
 
 	@Override
-	public void draw(int mouseX, int mouseY, float partialTicks) {
+	protected void drawBackground(int mouseX, int mouseY, float partialTicks) {
 		//						drawBackgroundTexture();
 		int color = 0xCC000000 | (0x00FFFFFF & guiPos.hashCode());
 		GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
-		super.draw(mouseX, mouseY, partialTicks);
-		drawItemStack(new ItemStack(Blocks.EMERALD_BLOCK, 5), 120, 13, !false);
+//		drawItemStack(new ItemStack(Blocks.CHEST, 4), 120, 13, !false);
 		Random ran = new Random(color);
-		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
+//		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
 		color = ~color | 0xFF000000;
-		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
-		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
-		if (Range.between(0, 40).contains(mouseX))
+//		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
+//		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
+	}
+
+	@Override
+	protected void drawForeground(int mouseX, int mouseY, float partialTicks) {
+		if (Range.between(0, 40).contains(mouseX)&&false)
 			drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
+	}
+	
+	@Override
+	public void click(int mouse, int mouseX, int mouseY) {
+		super.click(mouse, mouseX, mouseY);
+//		System.out.println(container.inventorySlots.get(1).getStack());
+//		System.out.println(container);
+//		System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
 	}
 
 	@Override
 	public void init() {
 		super.init();
-		buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
+		//		buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
+		//		int i=0;
+		//		int h=10;
+		//		for (int j = 0; j < 3; ++j)
+		//        {
+		//            for (int k = 0; k < 9; ++k)
+		//            {
+		//            	slots.add(new Slot(tile, k + j * 9, 8 + k * 18, 5 + j * 18));
+		//            }
+		//        }
+		//		for (int l = 0; l < 3; ++l)
+		//        {
+		//            for (int j1 = 0; j1 < 9; ++j1)
+		//            {
+		//            	slots.add(new Slot(mc.player.inventory, j1 + l * 9 + 9, 8 + j1 * 18, h+55 + l * 18 + i));
+		//            }
+		//        }
+		//
+		//        for (int i1 = 0; i1 < 9; ++i1)
+		//        {
+		//        	slots.add(new Slot(mc.player.inventory, i1, 8 + i1 * 18, h+58+55 + i));
+		//        }
 	}
 
 	@Override
 	public void buttonClicked(GuiButton b, int mouse) {
 	}
+
+	
 }

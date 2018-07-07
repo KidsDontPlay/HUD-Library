@@ -1,12 +1,16 @@
 package mrriegel.hudlibrary;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
+import mrriegel.hudlibrary.worldgui.PlayerData;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
+import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
@@ -21,11 +25,23 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
+import net.minecraftforge.fml.relauncher.Side;
 
 @EventBusSubscriber(modid = HUDLibrary.MODID)
 public class CommonEvents {
 
 	public static Set<UUID> openWorldGuis = new HashSet<>();
+	private static Map<String, PlayerData> playerDatas = new HashMap<>();
+
+	public static PlayerData getData(EntityPlayer player) {
+		String key = player.getUniqueID() + "" + (player.world.isRemote ? Side.CLIENT : Side.SERVER);
+//		key = player.getUniqueID().toString();
+		PlayerData data = playerDatas.get(key);
+		if (data != null)
+			return data;
+		playerDatas.put(key, data = new PlayerData());
+		return data;
+	}
 
 	@SubscribeEvent
 	public static void tick(PlayerTickEvent event) {
@@ -33,6 +49,8 @@ public class CommonEvents {
 			if (event.player.ticksExisted % 7 == 0) {
 				HUDLibrary.snw.sendTo(new HUDSyncMessage(event.player, 7), (EntityPlayerMP) event.player);
 			}
+			for (WorldGuiContainer c : getData(event.player).containers.values())
+				c.detectAndSendChanges();
 		}
 	}
 
@@ -56,13 +74,13 @@ public class CommonEvents {
 				((LeftClickBlock) event).setUseBlock(Result.DENY);
 				((LeftClickBlock) event).setUseItem(Result.DENY);
 			}
-		} else if (event instanceof RightClickBlock && !event.getEntityPlayer().isSneaking() && event.getHand() == EnumHand.MAIN_HAND) {
+		} else if (false && event instanceof RightClickBlock && !event.getEntityPlayer().isSneaking() && event.getHand() == EnumHand.MAIN_HAND) {
 			TileEntity tile = event.getWorld().getTileEntity(event.getPos());
 			if (tile != null && tile.hasCapability(WorldGuiCapability.cap, event.getFace())) {
 				((RightClickBlock) event).setUseBlock(Result.DENY);
 				event.setCanceled(true);
 				if (event.getWorld().isRemote) {
-					WorldGui gui = tile.getCapability(WorldGuiCapability.cap, event.getFace()).openGui(event.getEntityPlayer());
+					WorldGui gui = tile.getCapability(WorldGuiCapability.cap, event.getFace()).getGui(event.getEntityPlayer(), tile.getPos());
 					if (gui != null) {
 						WorldGui.openGui(gui);
 					}

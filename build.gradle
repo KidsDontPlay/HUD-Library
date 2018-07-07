@@ -8,6 +8,8 @@ buildscript {
     }
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'java'
+apply plugin: 'maven-publish'
 
 Properties props = new Properties()
 props.load(new BufferedReader(new FileReader(file('../gradle.properties'))))
@@ -38,6 +40,39 @@ processResources {
         
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
+    }
+}
+
+repositories {
+    maven {
+        url myMavenRepoReadUrl
+    }
+}
+
+task devJar(type: Jar) {
+    from sourceSets.main.allSource
+    from sourceSets.main.output
+    classifier = 'dev'
+}
+
+publishing {
+    repositories {
+        maven {
+            url myMavenRepoWriteUrl
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+            artifact devJar {
+                classifier "dev"
+            }
+        }
     }
 }
 

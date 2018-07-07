@@ -66,9 +66,9 @@ public class HUDItemStack extends HUDElement {
 			return;
 		RenderHelper.enableGUIStandardItemLighting();
 		int s = 1000;
-		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.depthMask(true);
-		GlStateManager.enableDepth();
+//		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+//		GlStateManager.depthMask(true);
+//		GlStateManager.enableDepth();
 		GlStateManager.pushMatrix();
 		GlStateManager.scale(1, 1, 1. / s);
 		RenderItem render = Minecraft.getMinecraft().getRenderItem();

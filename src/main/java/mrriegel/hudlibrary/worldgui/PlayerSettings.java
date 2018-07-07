@@ -11,6 +11,7 @@ public class PlayerSettings {
 	//	public double scale = .0065;
 	public Object2DoubleOpenHashMap<Class<?>> scaleMap = new Object2DoubleOpenHashMap<>();
 	public WorldGui focusedGui = null;
+	public boolean keysLocked = false;
 
 	private PlayerSettings() {
 		scaleMap.defaultReturnValue(.0065);

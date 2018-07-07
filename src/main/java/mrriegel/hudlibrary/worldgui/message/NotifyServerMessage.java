@@ -1,7 +1,10 @@
-package mrriegel.hudlibrary.worldgui;
+package mrriegel.hudlibrary.worldgui.message;
 
 import io.netty.buffer.ByteBuf;
 import mrriegel.hudlibrary.CommonEvents;
+import mrriegel.hudlibrary.HUDLibrary;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -21,10 +24,12 @@ public class NotifyServerMessage implements IMessage, IMessageHandler<NotifyServ
 	@Override
 	public IMessage onMessage(NotifyServerMessage message, MessageContext ctx) {
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			if (message.openGui)
+			if (message.openGui) {
 				CommonEvents.openWorldGuis.add(ctx.getServerHandler().player.getUniqueID());
-			else
+			} else {
 				CommonEvents.openWorldGuis.remove(ctx.getServerHandler().player.getUniqueID());
+//				HUDLibrary.drop(ctx.getServerHandler().player);
+			}
 		});
 		return null;
 	}
