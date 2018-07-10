@@ -2,8 +2,8 @@ package mrriegel.hudlibrary.worldgui.message;
 
 import io.netty.buffer.ByteBuf;
 import mrriegel.hudlibrary.CommonEvents;
+import mrriegel.hudlibrary.worldgui.ContainerWG;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
-import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
@@ -33,7 +33,7 @@ public class OpenGuiMessage implements IMessage, IMessageHandler<OpenGuiMessage,
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
 			TileEntity tile = ctx.getServerHandler().player.world.getTileEntity(message.pos);
 			if (tile != null && tile.hasCapability(WorldGuiCapability.cap, message.face)) {
-				WorldGuiContainer con = tile.getCapability(WorldGuiCapability.cap, message.face).getContainer(ctx.getServerHandler().player, message.pos);
+				ContainerWG con = tile.getCapability(WorldGuiCapability.cap, message.face).getContainer(ctx.getServerHandler().player, message.pos);
 				if (con != null) {
 					con.id = message.id;
 					CommonEvents.getData(ctx.getServerHandler().player).containers.put(message.id, con);

@@ -1,26 +1,17 @@
 package mrriegel.hudlibrary.worldgui.message;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 
 import io.netty.buffer.ByteBuf;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import mrriegel.hudlibrary.CommonEvents;
-import mrriegel.hudlibrary.HUDLibrary;
-import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
-import net.minecraft.inventory.IInventory;
+import mrriegel.hudlibrary.worldgui.ContainerWG;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -45,13 +36,13 @@ public class SyncContainerToClientMessage implements IMessage, IMessageHandler<S
 	@Override
 	public IMessage onMessage(SyncContainerToClientMessage message, MessageContext ctx) {
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			WorldGuiContainer c = CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers.get(message.id);
+			ContainerWG c = CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers.get(message.id);
 			if (c != null) {
 				for (Entry<Integer, ItemStack> e : message.map.entrySet()) {
 					c.putStackInSlot(e.getKey(), e.getValue());
 				}
-//				System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
-//				System.out.println(c.inventorySlots.get(1).getStack());
+				//				System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
+				//				System.out.println(c.inventorySlots.get(1).getStack());
 			}
 		});
 		return null;

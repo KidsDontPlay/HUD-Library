@@ -28,7 +28,7 @@ import mrriegel.hudlibrary.worldgui.IWorldGuiProvider;
 import mrriegel.hudlibrary.worldgui.PlayerSettings;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
-import mrriegel.hudlibrary.worldgui.message.NotifyServerMessage;
+import mrriegel.hudlibrary.worldgui.message.FocusGuiMessage;
 import mrriegel.hudlibrary.worldgui.message.OpenGuiMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiIngameMenu;
@@ -85,8 +85,6 @@ public class ClientEvents {
 
 	@SubscribeEvent
 	public static void render(RenderWorldLastEvent event) {
-		if (true)
-			return;
 		Minecraft mc = Minecraft.getMinecraft();
 		EntityPlayer player = mc.player;
 		Vec3d pp = player.getPositionEyes(event.getPartialTicks());
@@ -239,16 +237,14 @@ public class ClientEvents {
 				//				HUDLibrary.drop(mc.player);
 				int id = PlayerSettings.INSTANCE.focusedGui.id;
 				PlayerSettings.INSTANCE.focusedGui = null;
-				HUDLibrary.snw.sendToServer(new NotifyServerMessage(false));
-				CommonEvents.openWorldGuis.remove(mc.player.getUniqueID());
+				HUDLibrary.snw.sendToServer(new FocusGuiMessage(false));
 			}
 			for (WorldGui openGui : PlayerSettings.INSTANCE.guis) {
 				openGui.update();
 				if (PlayerSettings.INSTANCE.focusedGui == null && openGui.isFocused()) {
 					PlayerSettings.INSTANCE.focusedGui = openGui;
 					openGui.onMouseEnter();
-					HUDLibrary.snw.sendToServer(new NotifyServerMessage(true));
-					CommonEvents.openWorldGuis.add(mc.player.getUniqueID());
+					HUDLibrary.snw.sendToServer(new FocusGuiMessage(true));
 				}
 			}
 		}
@@ -305,7 +301,7 @@ public class ClientEvents {
 			//				GlStateManager.disableDepth();
 			//				GlStateManager.disableLighting();
 			//				GlStateManager.disableRescaleNormal();
-			gg.drawItemStack(new ItemStack(Blocks.CHEST, 2), 0, 0, !false);
+			gg.drawItemStack(new ItemStack(Blocks.SANDSTONE, 2), 0, 0, !false);
 		}
 		if (!false)
 			PlayerSettings.INSTANCE.guis.stream().filter(g -> g.isInFront() && pp.distanceTo(g.guiPos) < g.maxRenderDistance()).sorted((b, a) -> {

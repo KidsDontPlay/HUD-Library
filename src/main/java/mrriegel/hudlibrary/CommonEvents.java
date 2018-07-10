@@ -1,16 +1,20 @@
 package mrriegel.hudlibrary;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import it.unimi.dsi.fastutil.bytes.ByteList;
 import mrriegel.hudlibrary.tehud.HUDSyncMessage;
+import mrriegel.hudlibrary.worldgui.ContainerWG;
 import mrriegel.hudlibrary.worldgui.PlayerData;
+import mrriegel.hudlibrary.worldgui.PlayerSettings;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
-import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
@@ -25,22 +29,33 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 @EventBusSubscriber(modid = HUDLibrary.MODID)
 public class CommonEvents {
 
 	public static Set<UUID> openWorldGuis = new HashSet<>();
-	private static Map<String, PlayerData> playerDatas = new HashMap<>();
+	private static Map<ByteList, PlayerData> playerDatas = new HashMap<>();
 
 	public static PlayerData getData(EntityPlayer player) {
-		String key = player.getUniqueID() + "" + (player.world.isRemote ? Side.CLIENT : Side.SERVER);
-//		key = player.getUniqueID().toString();
-		PlayerData data = playerDatas.get(key);
+		ByteList bytes = playerID(player);
+		PlayerData data = playerDatas.get(bytes);
 		if (data != null)
 			return data;
-		playerDatas.put(key, data = new PlayerData());
+		playerDatas.put(bytes, data = new PlayerData());
 		return data;
+	}
+
+	public static boolean hasFocusedGui(EntityPlayer player) {
+		return player.world.isRemote ? PlayerSettings.INSTANCE.focusedGui != null : openWorldGuis.contains(player.getUniqueID());
+	}
+
+	private static ByteList playerID(EntityPlayer player) {
+		UUID u = player.getUniqueID();
+		ByteBuffer bb = ByteBuffer.wrap(new byte[17]);
+		bb.putLong(u.getLeastSignificantBits());
+		bb.putLong(u.getMostSignificantBits());
+		bb.put((byte) (player.world.isRemote ? 0 : 1));
+		return new ByteArrayList(bb.array());
 	}
 
 	@SubscribeEvent
@@ -49,7 +64,7 @@ public class CommonEvents {
 			if (event.player.ticksExisted % 7 == 0) {
 				HUDLibrary.snw.sendTo(new HUDSyncMessage(event.player, 7), (EntityPlayerMP) event.player);
 			}
-			for (WorldGuiContainer c : getData(event.player).containers.values())
+			for (ContainerWG c : getData(event.player).containers.values())
 				c.detectAndSendChanges();
 		}
 	}
@@ -63,7 +78,7 @@ public class CommonEvents {
 
 	@SubscribeEvent(priority = EventPriority.HIGH)
 	public static void interact(PlayerInteractEvent event) {
-		if (openWorldGuis.contains(event.getEntityPlayer().getUniqueID())) {
+		if (hasFocusedGui(event.getEntityPlayer())) {
 			if (event.isCancelable())
 				event.setCanceled(true);
 			event.setResult(Result.DENY);

@@ -7,5 +7,5 @@ public interface IWorldGuiProvider {
 
 	WorldGui getGui(EntityPlayer player, BlockPos pos);
 
-	WorldGuiContainer getContainer(EntityPlayer player, BlockPos pos);
+	ContainerWG getContainer(EntityPlayer player, BlockPos pos);
 }

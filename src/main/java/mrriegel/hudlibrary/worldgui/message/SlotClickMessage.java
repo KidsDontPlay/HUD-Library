@@ -2,8 +2,7 @@ package mrriegel.hudlibrary.worldgui.message;
 
 import io.netty.buffer.ByteBuf;
 import mrriegel.hudlibrary.CommonEvents;
-import mrriegel.hudlibrary.HUDLibrary;
-import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
+import mrriegel.hudlibrary.worldgui.ContainerWG;
 import net.minecraft.inventory.ClickType;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -29,7 +28,7 @@ public class SlotClickMessage implements IMessage, IMessageHandler<SlotClickMess
 	@Override
 	public IMessage onMessage(SlotClickMessage message, MessageContext ctx) {
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			WorldGuiContainer c = CommonEvents.getData(ctx.getServerHandler().player).containers.get(message.id);
+			ContainerWG c = CommonEvents.getData(ctx.getServerHandler().player).containers.get(message.id);
 			if (c != null) {
 				c.slotClick(message.slotID, message.mouse, message.type, ctx.getServerHandler().player);
 			}

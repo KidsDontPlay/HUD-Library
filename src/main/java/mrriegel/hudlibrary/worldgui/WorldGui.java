@@ -11,20 +11,15 @@ import mrriegel.hudlibrary.ClientHelper;
 import mrriegel.hudlibrary.CommonEvents;
 import mrriegel.hudlibrary.HUDLibrary;
 import mrriegel.hudlibrary.worldgui.message.CloseGuiMessage;
-import mrriegel.hudlibrary.worldgui.message.NotifyServerMessage;
+import mrriegel.hudlibrary.worldgui.message.FocusGuiMessage;
 import mrriegel.hudlibrary.worldgui.message.SlotClickMessage;
-import mrriegel.hudlibrary.worldgui.message.SyncPlayerInventoryMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ClickType;
-import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -48,9 +43,7 @@ public class WorldGui {
 	protected GuiButton selectedButton;
 	private final Vec3d front;
 	private final Vec3d back;
-	public WorldGuiContainer container;
-	@Deprecated
-	protected List<Slot> slots = new ArrayList<>();
+	public ContainerWG container;
 
 	public List<GuiButton> buttons = new ArrayList<>();
 
@@ -72,7 +65,6 @@ public class WorldGui {
 
 	public void init() {
 		buttons.clear();
-		slots.clear();
 		double halfWidth = width / 2d, halfHeight = height / 2d;
 		double scale = PlayerSettings.INSTANCE.scaleMap.getDouble(getClass());
 		a = guiPos.add(getVec(halfWidth * scale, halfHeight * scale, pitch, yaw));
@@ -86,31 +78,27 @@ public class WorldGui {
 		GlStateManager.disableLighting();
 		for (GuiButton b : buttons)
 			b.drawButton(mc, mouseX, mouseY, partialTicks);
-		//		for (Slot slot : slots) {
 		if (container != null)
 			for (Slot slot : container.inventorySlots) {
 				GlStateManager.color(1f, 1f, 1f, 1f);
 				mc.getTextureManager().bindTexture(SLOT_TEX);
 				GuiUtils.drawTexturedModalRect(slot.xPos - 1, slot.yPos - 1, 12, 12, 18, 18, 0);
-				//			GuiUtils.drawGradientRect(0, slot.xPos, slot.yPos, slot.xPos + 16, slot.yPos + 16, 0xFF123456, 0xFF654321);
 				drawItemStack(slot.getStack(), slot.xPos, slot.yPos, true);
-				if (Range.between(slot.xPos, slot.xPos + 16).contains(mouseX) && Range.between(slot.yPos, slot.yPos + 16).contains(mouseY)) {
+				if (isMouseOverSlot(slot, mouseX, mouseY)) {
 					GlStateManager.colorMask(true, true, true, false);
 					GuiUtils.drawGradientRect(0, slot.xPos, slot.yPos, slot.xPos + 16, slot.yPos + 16, -2130706433, -2130706433);
 					GlStateManager.colorMask(true, true, true, true);
 				}
 			}
 		drawForeground(mouseX, mouseY, partialTicks);
-		if (!mc.player.inventory.getItemStack().isEmpty()&&isFocused())
+		if (!mc.player.inventory.getItemStack().isEmpty() && isFocused())
 			drawItemStack(mc.player.inventory.getItemStack(), mouseX - 8, mouseY - 8, true);
 		if (container != null)
 			for (Slot slot : container.inventorySlots) {
-				if(slot.getHasStack())
-				if (Range.between(slot.xPos, slot.xPos + 16).contains(mouseX) && Range.between(slot.yPos, slot.yPos + 16).contains(mouseY)) {
+				if (slot.getHasStack() && isMouseOverSlot(slot, mouseX, mouseY))
 					drawTooltip(slot.getStack(), mouseX, mouseY);
-				}
 			}
-		
+
 	}
 
 	protected void drawBackground(int mouseX, int mouseY, float partialTicks) {
@@ -126,83 +114,17 @@ public class WorldGui {
 				b.playPressSound(mc.getSoundHandler());
 				buttonClicked(b, mouse);
 			}
-		//		for (Slot slot : slots) {
 		if (container != null)
 			for (Slot slot : container.inventorySlots) {
-				if (!Range.between(slot.xPos, slot.xPos + 16).contains(mouseX) || !Range.between(slot.yPos, slot.yPos + 16).contains(mouseY))
+				if (!isMouseOverSlot(slot, mouseX, mouseY))
 					continue;
-				container.slotClick(slot.slotNumber, mouse, mc.player.isSneaking() && !false ? ClickType.QUICK_MOVE : ClickType.PICKUP, mc.player);
-				HUDLibrary.snw.sendToServer(new SlotClickMessage(id, slot.slotNumber, mouse, mc.player.isSneaking() && !false ? ClickType.QUICK_MOVE : ClickType.PICKUP));
-				if (true)
-					continue;
-				InventoryPlayer inventoryplayer = mc.player.inventory;
-
-				ItemStack slotstack = slot.getStack();
-				ItemStack heldstack = inventoryplayer.getItemStack();
-
-				if (slotstack.isEmpty()) {
-					if (!heldstack.isEmpty() && slot.isItemValid(heldstack)) {
-						int i3 = mouse == 0 ? heldstack.getCount() : 1;
-
-						if (i3 > slot.getItemStackLimit(heldstack)) {
-							i3 = slot.getItemStackLimit(heldstack);
-						}
-
-						slot.putStack(heldstack.splitStack(i3));
-					}
-				} else if (slot.canTakeStack(mc.player)) {
-					if (heldstack.isEmpty()) {
-						if (slotstack.isEmpty()) {
-							slot.putStack(ItemStack.EMPTY);
-							inventoryplayer.setItemStack(ItemStack.EMPTY);
-						} else {
-							int l2 = mouse == 0 ? slotstack.getCount() : (slotstack.getCount() + 1) / 2;
-							inventoryplayer.setItemStack(slot.decrStackSize(l2));
-
-							if (slotstack.isEmpty()) {
-								slot.putStack(ItemStack.EMPTY);
-							}
-
-							slot.onTake(mc.player, inventoryplayer.getItemStack());
-						}
-					} else if (slot.isItemValid(heldstack)) {
-						if (slotstack.getItem() == heldstack.getItem() && slotstack.getMetadata() == heldstack.getMetadata() && ItemStack.areItemStackTagsEqual(slotstack, heldstack)) {
-							int k2 = mouse == 0 ? heldstack.getCount() : 1;
-
-							if (k2 > slot.getItemStackLimit(heldstack) - slotstack.getCount()) {
-								k2 = slot.getItemStackLimit(heldstack) - slotstack.getCount();
-							}
-
-							if (k2 > heldstack.getMaxStackSize() - slotstack.getCount()) {
-								k2 = heldstack.getMaxStackSize() - slotstack.getCount();
-							}
-
-							heldstack.shrink(k2);
-							slotstack.grow(k2);
-						} else if (heldstack.getCount() <= slot.getItemStackLimit(heldstack)) {
-							slot.putStack(heldstack);
-							inventoryplayer.setItemStack(slotstack);
-						}
-					} else if (slotstack.getItem() == heldstack.getItem() && heldstack.getMaxStackSize() > 1 && (!slotstack.getHasSubtypes() || slotstack.getMetadata() == heldstack.getMetadata()) && ItemStack.areItemStackTagsEqual(slotstack, heldstack) && !slotstack.isEmpty()) {
-						int j2 = slotstack.getCount();
-
-						if (j2 + heldstack.getCount() <= heldstack.getMaxStackSize()) {
-							heldstack.grow(j2);
-							slotstack = slot.decrStackSize(j2);
-
-							if (slotstack.isEmpty()) {
-								slot.putStack(ItemStack.EMPTY);
-							}
-
-							slot.onTake(mc.player, inventoryplayer.getItemStack());
-						}
-					}
-				}
-
-				slot.onSlotChanged();
-				HUDLibrary.snw.sendToServer(new SyncPlayerInventoryMessage(mc.player));
-
+				container.slotClick(slot.slotNumber, mouse, mc.player.isSneaking() ? ClickType.QUICK_MOVE : ClickType.PICKUP, mc.player);
+				HUDLibrary.snw.sendToServer(new SlotClickMessage(id, slot.slotNumber, mouse, mc.player.isSneaking() ? ClickType.QUICK_MOVE : ClickType.PICKUP));
 			}
+	}
+
+	private boolean isMouseOverSlot(Slot slot, int mouseX, int mouseY) {
+		return Range.between(slot.xPos, slot.xPos + 16).contains(mouseX) && Range.between(slot.yPos, slot.yPos + 16).contains(mouseY);
 	}
 
 	public void release(int mouse, int mouseX, int mouseY) {
@@ -244,22 +166,16 @@ public class WorldGui {
 	public void onMouseLeave() {
 	}
 
-	public boolean tooFarAway() {
-		return mc.player.getPositionVector().distanceTo(guiPos) > 8 && false;
-	}
-
 	public final void close() {
 		onClosed();
 		if (container != null)
 			container.onContainerClosed(mc.player);
-		HUDLibrary.drop(mc.player);
 		PlayerSettings.INSTANCE.guis.remove(this);
 		if (PlayerSettings.INSTANCE.focusedGui == this) {
 			PlayerSettings.INSTANCE.focusedGui = null;
-			HUDLibrary.snw.sendToServer(new NotifyServerMessage(false));
+			HUDLibrary.snw.sendToServer(new FocusGuiMessage(false));
 			HUDLibrary.snw.sendToServer(new CloseGuiMessage(id));
 			CommonEvents.getData(mc.player).containers.remove(id);
-			CommonEvents.openWorldGuis.remove(mc.player.getUniqueID());
 		}
 	}
 
@@ -267,9 +183,7 @@ public class WorldGui {
 	public void drawItemStack(ItemStack stack, int x, int y, boolean overlay) {
 		RenderHelper.enableGUIStandardItemLighting();
 		pre();
-		//		GlStateManager.rotate(180, 0, 1, 0);
 		mc.getRenderItem().renderItemAndEffectIntoGUI(stack, x, y);
-		//		mc.getRenderItem().renderItem(stack, TransformType.GUI);
 		if (overlay)
 			mc.getRenderItem().renderItemOverlayIntoGUI(mc.fontRenderer, stack, x, y, null);
 		post();

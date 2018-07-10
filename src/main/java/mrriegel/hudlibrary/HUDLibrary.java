@@ -20,20 +20,18 @@ import mrriegel.hudlibrary.tehud.element.HUDElement;
 import mrriegel.hudlibrary.tehud.element.HUDItemStack;
 import mrriegel.hudlibrary.tehud.element.HUDProgressBar;
 import mrriegel.hudlibrary.tehud.element.HUDText;
+import mrriegel.hudlibrary.worldgui.ContainerWG;
 import mrriegel.hudlibrary.worldgui.IWorldGuiProvider;
 import mrriegel.hudlibrary.worldgui.WorldGui;
 import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
-import mrriegel.hudlibrary.worldgui.WorldGuiContainer;
 import mrriegel.hudlibrary.worldgui.message.CloseGuiMessage;
-import mrriegel.hudlibrary.worldgui.message.NotifyServerMessage;
+import mrriegel.hudlibrary.worldgui.message.FocusGuiMessage;
 import mrriegel.hudlibrary.worldgui.message.OpenGuiMessage;
 import mrriegel.hudlibrary.worldgui.message.SlotClickMessage;
 import mrriegel.hudlibrary.worldgui.message.SyncContainerToClientMessage;
-import mrriegel.hudlibrary.worldgui.message.SyncPlayerInventoryMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
@@ -84,8 +82,8 @@ public class HUDLibrary {
 
 	public static boolean useList;
 	public static int maxHUDs;
-	
-	@SidedProxy(serverSide="mrriegel.hudlibrary.CommonProxy",clientSide="mrriegel.hudlibrary.ClientProxy")
+
+	@SidedProxy(serverSide = "mrriegel.hudlibrary.CommonProxy", clientSide = "mrriegel.hudlibrary.ClientProxy")
 	public static CommonProxy proxy;
 
 	@EventHandler
@@ -103,8 +101,7 @@ public class HUDLibrary {
 		int index = 0;
 		snw = new SimpleNetworkWrapper(MODID);
 		snw.registerMessage(HUDSyncMessage.class, HUDSyncMessage.class, index++, Side.CLIENT);
-		snw.registerMessage(NotifyServerMessage.class, NotifyServerMessage.class, index++, Side.SERVER);
-		snw.registerMessage(SyncPlayerInventoryMessage.class, SyncPlayerInventoryMessage.class, index++, Side.SERVER);
+		snw.registerMessage(FocusGuiMessage.class, FocusGuiMessage.class, index++, Side.SERVER);
 		snw.registerMessage(SyncContainerToClientMessage.class, SyncContainerToClientMessage.class, index++, Side.CLIENT);
 		snw.registerMessage(OpenGuiMessage.class, OpenGuiMessage.class, index++, Side.SERVER);
 		snw.registerMessage(CloseGuiMessage.class, CloseGuiMessage.class, index++, Side.SERVER);
@@ -141,7 +138,7 @@ public class HUDLibrary {
 						}
 						//						lis.add(new HUDFluidStack(new FluidStack(FluidRegistry.LAVA, 23), -1, 26));
 						//						lis.add(new HUDText("geh halt weg und weg", false));
-						lis.add(new HUDItemStack(new ItemStack(Blocks.CHEST, 64)).setPadding(58));
+						lis.add(new HUDItemStack(new ItemStack(Blocks.SANDSTONE, 64)).setPadding(58));
 						return lis;
 					}
 
@@ -346,14 +343,14 @@ public class HUDLibrary {
 					}
 
 					@Override
-					public WorldGuiContainer getContainer(EntityPlayer player, BlockPos pos) {
-						return new WorldGuiContainer(player) {
+					public ContainerWG getContainer(EntityPlayer player, BlockPos pos) {
+						return new ContainerWG(player) {
 							{
-//								if(player.world.isRemote)System.out.println(this);
+								//								if(player.world.isRemote)System.out.println(this);
 								int h = 10;
 								for (int i = 0; i < ((IInventory) tile).getSizeInventory(); i++) {
 									ItemStack s = ((IInventory) tile).getStackInSlot(i);
-									if(!s.isEmpty()&&false)
+									if (!s.isEmpty() && false)
 										System.out.println(s);
 								}
 								for (int j = 0; j < 3; ++j) {
@@ -371,40 +368,32 @@ public class HUDLibrary {
 									addSlotToContainer(new Slot(player.inventory, i1, 8 + i1 * 18, h + 58 + 55 + 0));
 								}
 							}
-							
+
 							@Override
 							public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
-								 ItemStack itemstack = ItemStack.EMPTY;
-							        Slot slot = this.inventorySlots.get(index);
+								ItemStack itemstack = ItemStack.EMPTY;
+								Slot slot = this.inventorySlots.get(index);
 
-							        if (slot != null && slot.getHasStack())
-							        {
-							            ItemStack itemstack1 = slot.getStack();
-							            itemstack = itemstack1.copy();
+								if (slot != null && slot.getHasStack()) {
+									ItemStack itemstack1 = slot.getStack();
+									itemstack = itemstack1.copy();
 
-							            if (index < 3 * 9)
-							            {
-							                if (!this.mergeItemStack(itemstack1, 3 * 9, this.inventorySlots.size(), true))
-							                {
-							                    return ItemStack.EMPTY;
-							                }
-							            }
-							            else if (!this.mergeItemStack(itemstack1, 0, 3 * 9, false))
-							            {
-							                return ItemStack.EMPTY;
-							            }
+									if (index < 3 * 9) {
+										if (!this.mergeItemStack(itemstack1, 3 * 9, this.inventorySlots.size(), true)) {
+											return ItemStack.EMPTY;
+										}
+									} else if (!this.mergeItemStack(itemstack1, 0, 3 * 9, false)) {
+										return ItemStack.EMPTY;
+									}
 
-							            if (itemstack1.isEmpty())
-							            {
-							                slot.putStack(ItemStack.EMPTY);
-							            }
-							            else
-							            {
-							                slot.onSlotChanged();
-							            }
-							        }
+									if (itemstack1.isEmpty()) {
+										slot.putStack(ItemStack.EMPTY);
+									} else {
+										slot.onSlotChanged();
+									}
+								}
 
-							        return itemstack;
+								return itemstack;
 							}
 						};
 					}
@@ -425,14 +414,6 @@ public class HUDLibrary {
 		}
 	}
 
-	public static void drop(EntityPlayer player) {
-		InventoryPlayer inventoryplayer = player.inventory;
-		if (!inventoryplayer.getItemStack().isEmpty()) {
-			player.dropItem(inventoryplayer.getItemStack(), false);
-			inventoryplayer.setItemStack(ItemStack.EMPTY);
-			player.openContainer.detectAndSendChanges();
-		}
-	}
 }
 
 class Gui extends WorldGui {
@@ -450,26 +431,26 @@ class Gui extends WorldGui {
 		//						drawBackgroundTexture();
 		int color = 0xCC000000 | (0x00FFFFFF & guiPos.hashCode());
 		GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
-//		drawItemStack(new ItemStack(Blocks.CHEST, 4), 120, 13, !false);
+		//		drawItemStack(new ItemStack(Blocks.CHEST, 4), 120, 13, !false);
 		Random ran = new Random(color);
-//		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
+		//		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
 		color = ~color | 0xFF000000;
-//		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
-//		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
+		//		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
+		//		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
 	}
 
 	@Override
 	protected void drawForeground(int mouseX, int mouseY, float partialTicks) {
-		if (Range.between(0, 40).contains(mouseX)&&false)
+		if (Range.between(0, 40).contains(mouseX) && false)
 			drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
 	}
-	
+
 	@Override
 	public void click(int mouse, int mouseX, int mouseY) {
 		super.click(mouse, mouseX, mouseY);
-//		System.out.println(container.inventorySlots.get(1).getStack());
-//		System.out.println(container);
-//		System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
+		//		System.out.println(container.inventorySlots.get(1).getStack());
+		//		System.out.println(container);
+		//		System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
 	}
 
 	@Override
@@ -503,5 +484,4 @@ class Gui extends WorldGui {
 	public void buttonClicked(GuiButton b, int mouse) {
 	}
 
-	
 }

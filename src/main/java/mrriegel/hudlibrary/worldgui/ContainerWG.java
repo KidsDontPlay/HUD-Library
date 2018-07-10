@@ -6,16 +6,14 @@ import mrriegel.hudlibrary.worldgui.message.SyncContainerToClientMessage;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
-import net.minecraft.inventory.IContainerListener;
-import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-public class WorldGuiContainer extends Container {
+public class ContainerWG extends Container {
 
 	public int id;
-	EntityPlayer player;
+	protected EntityPlayer player;
 
-	public WorldGuiContainer(EntityPlayer player) {
+	public ContainerWG(EntityPlayer player) {
 		super();
 		this.player = player;
 	}
@@ -23,11 +21,6 @@ public class WorldGuiContainer extends Container {
 	@Override
 	public boolean canInteractWith(EntityPlayer playerIn) {
 		return true;
-	}
-
-	@Override
-	public Slot addSlotToContainer(Slot slotIn) {
-		return super.addSlotToContainer(slotIn);
 	}
 
 	@Override
@@ -50,13 +43,15 @@ public class WorldGuiContainer extends Container {
 				map.put(i, itemstack1);
 			}
 		}
-		if (!player.world.isRemote&&!map.isEmpty()) {
+		if (!player.world.isRemote && !map.isEmpty()) {
 			HUDLibrary.snw.sendTo(new SyncContainerToClientMessage(id, map), (EntityPlayerMP) player);
 		}
 	}
-	
+
 	@Override
 	public void onContainerClosed(EntityPlayer playerIn) {
+		super.onContainerClosed(playerIn);
+		player.openContainer.detectAndSendChanges();
 	}
 
 }
