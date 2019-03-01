@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import mrriegel.hudlibrary.CommonEvents;
 import mrriegel.hudlibrary.worldgui.ContainerWG;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -35,14 +36,13 @@ public class SyncContainerToClientMessage implements IMessage, IMessageHandler<S
 
 	@Override
 	public IMessage onMessage(SyncContainerToClientMessage message, MessageContext ctx) {
+		EntityPlayer p = FMLClientHandler.instance().getClientPlayerEntity();
 		FMLCommonHandler.instance().getWorldThread(ctx.netHandler).addScheduledTask(() -> {
-			ContainerWG c = CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers.get(message.id);
+			ContainerWG c = CommonEvents.getData(p).containers.get(message.id);
 			if (c != null) {
 				for (Entry<Integer, ItemStack> e : message.map.entrySet()) {
 					c.putStackInSlot(e.getKey(), e.getValue());
 				}
-				//				System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
-				//				System.out.println(c.inventorySlots.get(1).getStack());
 			}
 		});
 		return null;

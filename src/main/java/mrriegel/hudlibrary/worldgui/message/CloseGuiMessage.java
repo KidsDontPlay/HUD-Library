@@ -27,6 +27,8 @@ public class CloseGuiMessage implements IMessage, IMessageHandler<CloseGuiMessag
 			if (con != null)
 				con.onContainerClosed(ctx.getServerHandler().player);
 			CommonEvents.getData(ctx.getServerHandler().player).containers.remove(message.id);
+			FocusGuiMessage m = new FocusGuiMessage(false);
+			m.onMessage(m, ctx);
 		});
 		return null;
 	}

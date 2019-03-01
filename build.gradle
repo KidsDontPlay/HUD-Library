@@ -58,13 +58,14 @@ task devJar(type: Jar) {
 publishing {
     repositories {
         maven {
-            url myMavenRepoWriteUrl
+            url = 'https://melone.org'
         }
     }
 
     publications {
         maven(MavenPublication) {
             from components.java
+            groupId = 'net.mad.user'
 
             artifact sourceJar {
                 classifier "sources"

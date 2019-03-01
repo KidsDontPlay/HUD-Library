@@ -32,7 +32,6 @@ import mrriegel.hudlibrary.worldgui.message.SyncContainerToClientMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -40,8 +39,8 @@ import net.minecraft.launchwrapper.Launch;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityBrewingStand;
 import net.minecraft.tileentity.TileEntityChest;
-import net.minecraft.tileentity.TileEntityDropper;
 import net.minecraft.tileentity.TileEntityFurnace;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
@@ -53,6 +52,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.util.TextTable.Alignment;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -106,7 +106,8 @@ public class HUDLibrary {
 		snw.registerMessage(OpenGuiMessage.class, OpenGuiMessage.class, index++, Side.SERVER);
 		snw.registerMessage(CloseGuiMessage.class, CloseGuiMessage.class, index++, Side.SERVER);
 		snw.registerMessage(SlotClickMessage.class, SlotClickMessage.class, index++, Side.SERVER);
-		ClientRegistry.registerKeyBinding(ClientEvents.OPENWORLDGUI);
+		if (event.getSide().isClient())
+			ClientRegistry.registerKeyBinding(ClientEvents.OPENWORLDGUI);
 	}
 
 	@EventHandler
@@ -120,31 +121,21 @@ public class HUDLibrary {
 		if (event.getObject() instanceof TileEntityFurnace) {
 			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
 				TileEntityFurnace tile = (TileEntityFurnace) event.getObject();
-				IHUDProvider pro = new IHUDProvider() {
+				IHUDProvider<TileEntityFurnace> pro = new IHUDProvider<TileEntityFurnace>() {
 
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						//						lis.add(new HUDText("moon", false));
-						//						lis.add(new HUDCompound(!false, new HUDText("Input: kokablac", false), new HUDItemStack(ItemStack.EMPTY)));
-						//						lis.add(new HUDText("sun", false));
-						//						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
-						//						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
-						Random ran = new Random(facing.name().hashCode() ^ tile.getPos().hashCode());
-						for (int i = 0; i < 5; i++) {
-							HUDProgressBar bar = new HUDProgressBar(-1, 14, 0x44098765, new Color(ran.nextInt(256), ran.nextInt(256), ran.nextInt(256), 0xFF).getRGB());
-							bar.setFilling(ran.nextDouble() / 2 + .5);
-							//							lis.add(bar);
-						}
-						//						lis.add(new HUDFluidStack(new FluidStack(FluidRegistry.LAVA, 23), -1, 26));
-						//						lis.add(new HUDText("geh halt weg und weg", false));
-						lis.add(new HUDItemStack(new ItemStack(Blocks.SANDSTONE, 64)).setPadding(58));
+						lis.add(new HUDCompound(false, new HUDText("Input: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDCompound(false, new HUDText("Output: ", false), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDProgressBar(-1, 16, 0x22111111, 0xAA777777));
+						lis.add(new HUDCompound(false, new HUDText("Fuel: ", false), new HUDItemStack(ItemStack.EMPTY), new HUDText("", false)));
 						return lis;
 					}
 
 					@Override
-					public Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
-						Int2ObjectMap<Function<TileEntity, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
+					public Map<Integer, Function<TileEntityFurnace, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						Int2ObjectMap<Function<TileEntityFurnace, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
 						map.put(0, t -> {
 							TileEntityFurnace tile = (TileEntityFurnace) t;
 							NBTTagCompound nbt = new NBTTagCompound();
@@ -173,13 +164,27 @@ public class HUDLibrary {
 							ret.setTag("elements", lis);
 							return ret;
 						});
+						map.put(3, t -> {
+							TileEntityFurnace tile = (TileEntityFurnace) t;
+							NBTTagCompound nbt = new NBTTagCompound();
+							NBTTagList lis = new NBTTagList();
+							lis.appendTag(new NBTTagCompound());
+							nbt.setTag("stack", tile.getStackInSlot(1).writeToNBT(new NBTTagCompound()));
+							lis.appendTag(nbt);
+							nbt = new NBTTagCompound();
+							nbt.setString("text", " " + tile.getField(0));
+							lis.appendTag(nbt);
+							NBTTagCompound ret = new NBTTagCompound();
+							ret.setTag("elements", lis);
+							return ret;
+						});
 						return map;
 					}
 
 					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
 						if (true)
-							return 0x88AA1144;
+							return 0x88444444;
 						Random k = new Random(tile.getPos().toString().hashCode());
 						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
 						return c.getRGB();
@@ -203,8 +208,8 @@ public class HUDLibrary {
 
 					@Override
 					public double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
-						//						if (axis == Axis.NORMAL)
-						//							return Math.sin(player.ticksExisted / 9.);
+//												if (axis == Axis.NORMAL)
+//													return Math.sin(player.ticksExisted / 9.);
 						if (true)
 							return 0;
 						if (axis == Axis.HORIZONTAL)
@@ -223,17 +228,17 @@ public class HUDLibrary {
 
 					@Override
 					public int getMargin(Direction dir) {
-						return 2;
+						return IHUDProvider.super.getMargin(dir);
 					}
 
 					@Override
 					public boolean is360degrees(EntityPlayer player) {
-						return IHUDProvider.super.is360degrees(player) ^ !true;
+						return false;
 					}
 
 					@Override
 					public boolean isVisible(EntityPlayer player, EnumFacing facing) {
-						if (true)
+						if (!true)
 							return true;
 						RayTraceResult rtr = Minecraft.getMinecraft().objectMouseOver;
 						if (rtr != null && rtr.typeOfHit == Type.BLOCK && rtr.getBlockPos() != null)
@@ -255,17 +260,16 @@ public class HUDLibrary {
 				}
 
 			});
-		} else if (event.getObject() instanceof TileEntityDropper) {
+		} else if (event.getObject() instanceof TileEntityChest) {
 			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
-				TileEntityDropper tile = (TileEntityDropper) event.getObject();
-				IHUDProvider pro = new IHUDProvider() {
+				TileEntityChest tile = (TileEntityChest) event.getObject();
+				IHUDProvider<TileEntityChest> pro = new IHUDProvider<TileEntityChest>() {
 
 					List<HUDElement> l = null;
 
 					@Override
 					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
 						List<HUDElement> lis = new ArrayList<>();
-						lis.add(new HUDText("samba", false));
 						//												l = null;
 						if (l == null || player.world.rand.nextDouble() < .02) {
 							l = new ArrayList<>();
@@ -278,10 +282,10 @@ public class HUDLibrary {
 					}
 
 					@Override
-					public Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
-						Int2ObjectMap<Function<TileEntity, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
-						map.put(1, t -> {
-							TileEntityDropper tile = (TileEntityDropper) t;
+					public Map<Integer, Function<TileEntityChest, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						Int2ObjectMap<Function<TileEntityChest, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
+						map.put(0, t -> {
+							TileEntityChest tile = (TileEntityChest) t;
 							NBTTagList lis = new NBTTagList();
 							for (int i = 0; i < tile.getSizeInventory(); i++) {
 								NBTTagCompound nbt = new NBTTagCompound();
@@ -302,13 +306,9 @@ public class HUDLibrary {
 
 					@Override
 					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
-						Random k = new Random(tile.getPos().toLong());
-						if (true)
-							return 0x88000000 | (0x00FFFFFF & k.nextInt());
-						Color c = new Color(k.nextInt(256), k.nextInt(256), k.nextInt(256), 0x88);
-						if (true)
-							return c.getRGB();
-						return 0x88AA1144;
+						if (!true)
+							return 0x99000000 | (0x00FFFFFF & (tile.getPos().hashCode() * facing.ordinal()));
+						return 0x8811AA44;
 					}
 
 					@Override
@@ -331,7 +331,67 @@ public class HUDLibrary {
 				}
 
 			});
-		} else if (event.getObject() instanceof TileEntityChest) {
+		} else if (event.getObject() instanceof TileEntityBrewingStand) {
+			event.addCapability(new ResourceLocation(MODID, "dd"), new ICapabilityProvider() {
+				TileEntityBrewingStand tile = (TileEntityBrewingStand) event.getObject();
+				IHUDProvider<TileEntityBrewingStand> pro = new IHUDProvider<TileEntityBrewingStand>() {
+
+					@Override
+					public List<HUDElement> getElements(EntityPlayer player, EnumFacing facing) {
+						List<HUDElement> lis = new ArrayList<>();
+						lis.add(new HUDCompound(false, new HUDText("Ingredient: ", false), new HUDItemStack(ItemStack.EMPTY), new HUDItemStack(ItemStack.EMPTY), new HUDItemStack(ItemStack.EMPTY)));
+						lis.add(new HUDText("", false));
+						return lis;
+					}
+
+					@Override
+					public Map<Integer, Function<TileEntityBrewingStand, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing) {
+						Int2ObjectMap<Function<TileEntityBrewingStand, NBTTagCompound>> map = new Int2ObjectOpenHashMap<>();
+						map.put(0, t -> {
+							TileEntityBrewingStand tile = (TileEntityBrewingStand) t;
+							NBTTagCompound ret = new NBTTagCompound();
+							NBTTagList list=new NBTTagList();
+							list.appendTag(new NBTTagCompound());
+							ret.setTag("elements", list);
+							return ret;
+						});
+						return map;
+					}
+
+					@Override
+					public int width(EntityPlayer player, EnumFacing facing) {
+						return 120;
+					}
+
+					@Override
+					public int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
+						if (!true)
+							return 0x99000000 | (0x00FFFFFF & (tile.getPos().hashCode() * facing.ordinal()));
+						return 0x881144AA;
+					}
+
+					@Override
+					public Side readingSide() {
+						return Side.SERVER;
+					}
+
+				};
+
+				@Override
+				public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
+					return capability == HUDCapability.cap;
+				}
+
+				@Override
+				public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+					if (hasCapability(capability, facing))
+						return (T) pro;
+					return null;
+				}
+
+			});
+		}
+		if (event.getObject() instanceof TileEntityChest) {
 			event.addCapability(new ResourceLocation(MODID, "kip"), new ICapabilityProvider() {
 				TileEntity tile = event.getObject();
 
@@ -451,33 +511,6 @@ class Gui extends WorldGui {
 		//		System.out.println(container.inventorySlots.get(1).getStack());
 		//		System.out.println(container);
 		//		System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
-	}
-
-	@Override
-	public void init() {
-		super.init();
-		//		buttons.add(new GuiButtonExt(0, 10, 60, 58, 28, "myspace"));
-		//		int i=0;
-		//		int h=10;
-		//		for (int j = 0; j < 3; ++j)
-		//        {
-		//            for (int k = 0; k < 9; ++k)
-		//            {
-		//            	slots.add(new Slot(tile, k + j * 9, 8 + k * 18, 5 + j * 18));
-		//            }
-		//        }
-		//		for (int l = 0; l < 3; ++l)
-		//        {
-		//            for (int j1 = 0; j1 < 9; ++j1)
-		//            {
-		//            	slots.add(new Slot(mc.player.inventory, j1 + l * 9 + 9, 8 + j1 * 18, h+55 + l * 18 + i));
-		//            }
-		//        }
-		//
-		//        for (int i1 = 0; i1 < 9; ++i1)
-		//        {
-		//        	slots.add(new Slot(mc.player.inventory, i1, 8 + i1 * 18, h+58+55 + i));
-		//        }
 	}
 
 	@Override

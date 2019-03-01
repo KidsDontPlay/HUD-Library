@@ -11,7 +11,6 @@ import mrriegel.hudlibrary.ClientHelper;
 import mrriegel.hudlibrary.CommonEvents;
 import mrriegel.hudlibrary.HUDLibrary;
 import mrriegel.hudlibrary.worldgui.message.CloseGuiMessage;
-import mrriegel.hudlibrary.worldgui.message.FocusGuiMessage;
 import mrriegel.hudlibrary.worldgui.message.SlotClickMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
@@ -34,15 +33,13 @@ public class WorldGui {
 	private static final ResourceLocation SLOT_TEX = new ResourceLocation("textures/gui/container/recipe_background.png");
 
 	public int width = 250, height = 150, id;
-	public final Vec3d guiPos, playerPos;
+	public final Vec3d guiPos, playerPos, front, back;
 	public Vec3d a, b, c, d;
 	public final float yaw, pitch;
 	public double u, v, maxU, maxV;
 
 	private final GuiScreen screen;
 	protected GuiButton selectedButton;
-	private final Vec3d front;
-	private final Vec3d back;
 	public ContainerWG container;
 
 	public List<GuiButton> buttons = new ArrayList<>();
@@ -134,13 +131,13 @@ public class WorldGui {
 		}
 	}
 
-	public boolean isReachable() {
-		return guiPos.distanceTo(mc.player.getPositionVector()) < mc.player.getEntityAttribute(EntityPlayer.REACH_DISTANCE).getAttributeValue() && isInFront();
-	}
-
 	public boolean isInFront() {
 		Vec3d p = mc.player.getPositionEyes(0);
 		return p.distanceTo(front) < p.distanceTo(back);
+	}
+
+	public boolean isReachable() {
+		return guiPos.distanceTo(mc.player.getPositionVector()) < mc.player.getEntityAttribute(EntityPlayer.REACH_DISTANCE).getAttributeValue() && isInFront();
 	}
 
 	public boolean isFocused() {
@@ -173,7 +170,6 @@ public class WorldGui {
 		PlayerSettings.INSTANCE.guis.remove(this);
 		if (PlayerSettings.INSTANCE.focusedGui == this) {
 			PlayerSettings.INSTANCE.focusedGui = null;
-			HUDLibrary.snw.sendToServer(new FocusGuiMessage(false));
 			HUDLibrary.snw.sendToServer(new CloseGuiMessage(id));
 			CommonEvents.getData(mc.player).containers.remove(id);
 		}

@@ -1,6 +1,8 @@
 package mrriegel.hudlibrary;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,16 +15,13 @@ import mrriegel.hudlibrary.tehud.HUDSyncMessage;
 import mrriegel.hudlibrary.worldgui.ContainerWG;
 import mrriegel.hudlibrary.worldgui.PlayerData;
 import mrriegel.hudlibrary.worldgui.PlayerSettings;
-import mrriegel.hudlibrary.worldgui.WorldGui;
-import mrriegel.hudlibrary.worldgui.WorldGuiCapability;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumHand;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -64,8 +63,18 @@ public class CommonEvents {
 			if (event.player.ticksExisted % 7 == 0) {
 				HUDLibrary.snw.sendTo(new HUDSyncMessage(event.player, 7), (EntityPlayerMP) event.player);
 			}
-			for (ContainerWG c : getData(event.player).containers.values())
-				c.detectAndSendChanges();
+			PlayerData data = getData(event.player);
+			Collection<Integer> toRemove = new ArrayList<>();
+			for (ContainerWG c : data.containers.values()) {
+				if (c.canInteractWith(event.player))
+					c.detectAndSendChanges();
+				else
+					toRemove.add(c.id);
+			}
+			//			for (int id : toRemove) {
+			//				CloseGuiMessage m=new CloseGuiMessage(id);
+			//				m.onMessage(m, ctx)
+			//			}
 		}
 	}
 
@@ -89,20 +98,17 @@ public class CommonEvents {
 				((LeftClickBlock) event).setUseBlock(Result.DENY);
 				((LeftClickBlock) event).setUseItem(Result.DENY);
 			}
-		} else if (false && event instanceof RightClickBlock && !event.getEntityPlayer().isSneaking() && event.getHand() == EnumHand.MAIN_HAND) {
-			TileEntity tile = event.getWorld().getTileEntity(event.getPos());
-			if (tile != null && tile.hasCapability(WorldGuiCapability.cap, event.getFace())) {
-				((RightClickBlock) event).setUseBlock(Result.DENY);
-				event.setCanceled(true);
-				if (event.getWorld().isRemote) {
-					WorldGui gui = tile.getCapability(WorldGuiCapability.cap, event.getFace()).getGui(event.getEntityPlayer(), tile.getPos());
-					if (gui != null) {
-						WorldGui.openGui(gui);
-					}
-				}
-			}
-
 		}
+	}
+
+	@SubscribeEvent
+	public static void load(ChunkEvent.Load event) {
+//		event.getChunk().getTileEntityMap().values().stream().filter(t -> t != null && t.hasCapability(HUDCapability.cap, null)).forEach(HUDCapability.hudTiles::add);
+	}
+
+	@SubscribeEvent
+	public static void unload(ChunkEvent.Unload event) {
+//		event.getChunk().getTileEntityMap().values().stream().filter(t -> t != null && t.hasCapability(HUDCapability.cap, null)).forEach(HUDCapability.hudTiles::remove);
 	}
 
 }

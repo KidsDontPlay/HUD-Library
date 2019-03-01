@@ -7,11 +7,10 @@ import java.util.function.Function;
 import mrriegel.hudlibrary.tehud.element.HUDElement;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fml.relauncher.Side;
 
-public interface IHUDProvider {
+public interface IHUDProvider<T> {
 
 	default int getBackgroundColor(EntityPlayer player, EnumFacing facing) {
 		return 0x44CCCCFF;
@@ -31,7 +30,7 @@ public interface IHUDProvider {
 
 	List<HUDElement> getElements(EntityPlayer player, EnumFacing facing);
 
-	Map<Integer, Function<TileEntity, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing);
+	Map<Integer, Function<T, NBTTagCompound>> getNBTData(EntityPlayer player, EnumFacing facing);
 
 	default double offset(EntityPlayer player, EnumFacing facing, Axis axis) {
 		return 0;

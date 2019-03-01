@@ -25,7 +25,6 @@ public class FocusGuiMessage implements IMessage, IMessageHandler<FocusGuiMessag
 				CommonEvents.openWorldGuis.add(ctx.getServerHandler().player.getUniqueID());
 			} else {
 				CommonEvents.openWorldGuis.remove(ctx.getServerHandler().player.getUniqueID());
-				//				HUDLibrary.drop(ctx.getServerHandler().player);
 			}
 		});
 		return null;
