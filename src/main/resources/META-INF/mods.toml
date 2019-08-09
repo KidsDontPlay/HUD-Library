@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[27,)"
+issueTrackerURL="http://my.issue.tracker/"
+
+[[mods]]
+modId="hudlibrary"
+version="1.0.0"
+displayName="HUD Library"
+displayURL="https://minecraft.curseforge.com/projects/hudlibrary"
+credits="Thanks for this example mod goes to Java"
+authors="KidsDontPlay"
+description='''
+HUD
+'''
+
+[[dependencies.hudlibrary]]
+    modId="forge"
+    mandatory=true
+    versionRange="[27,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.hudlibrary]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.14.4,1.15)"
+    ordering="NONE"
+    side="BOTH"
