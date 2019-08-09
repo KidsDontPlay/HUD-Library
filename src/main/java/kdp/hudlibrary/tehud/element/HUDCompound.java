@@ -9,14 +9,14 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 
 import org.apache.commons.lang3.Validate;
 
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public class HUDCompound extends HUDElement {
+public class HUDCompound extends HUDElement<ListNBT> {
     protected final HUDElement[] elements;
     protected final boolean lineBreak;
 
@@ -31,27 +31,26 @@ public class HUDCompound extends HUDElement {
         this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
     }
 
-    public HUDElement[] getElements() {
-        return elements;
-    }
-
     @Override
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(ListNBT tag) {
         if (reader != null) {
             reader.accept(this, tag);
-            return;
+            return this;
         }
-        if (tag.contains("elements")) {
-            ListNBT list = tag.getList("elements", 10);
-            //Validate.isTrue(elements.length == list.size());
-            int size = Math.min(elements.length, list.size());
-            for (int i = 0; i < size; i++) {
-                HUDElement h = elements[i];
-                CompoundNBT nbt = list.getCompound(i);
-                h.readSyncTag(nbt);
-            }
+        //Validate.isTrue(elements.length == list.size());
+        int size = Math.min(elements.length, tag.size());
+        for (int i = 0; i < size; i++) {
+            HUDElement h = elements[i];
+            INBT nbt = tag.get(i);
+            h.read(nbt);
         }
+        return this;
     }
+
+    //@Override
+    /*public ListNBT write() {
+        return Arrays.stream(elements).map(h -> h.write()).collect(Collectors.toCollection(ListNBT::new));
+    }*/
 
     private List<List<HUDElement>> getElementRows(int maxWidth) {
         List<List<HUDElement>> lines = new ArrayList<>();

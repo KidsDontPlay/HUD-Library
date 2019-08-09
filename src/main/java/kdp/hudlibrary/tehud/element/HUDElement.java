@@ -10,16 +10,16 @@ import javax.annotation.Nonnull;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraftforge.common.util.TextTable.Alignment;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public abstract class HUDElement {
+public abstract class HUDElement<N extends INBT> {
 
-    protected BiConsumer<HUDElement, CompoundNBT> reader = null;
+    protected BiConsumer<HUDElement, N> reader = null;
     protected Alignment align = Alignment.LEFT;
     protected final Int2IntMap padding = new Int2IntOpenHashMap(4);
     protected Integer backgroundColor;
@@ -27,7 +27,7 @@ public abstract class HUDElement {
             .expireAfterWrite(500, TimeUnit.MILLISECONDS).build();
 
     protected HUDElement() {
-        padding.defaultReturnValue(/*TODO 1*/0);
+        padding.defaultReturnValue(1);
     }
 
     public Alignment getAlignment() {
@@ -71,15 +71,20 @@ public abstract class HUDElement {
         return this;
     }
 
-    public HUDElement setReader(BiConsumer<HUDElement, CompoundNBT> reader) {
+    public HUDElement setReader(BiConsumer<HUDElement, N> reader) {
         this.reader = reader;
         return this;
     }
 
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(N tag) {
         if (reader != null)
             reader.accept(this, tag);
+        return this;
     }
+
+    /*public N write() {
+        throw new UnsupportedOperationException();
+    }*/
 
     public final Dimension getDimension(int maxWidth) {
         try {

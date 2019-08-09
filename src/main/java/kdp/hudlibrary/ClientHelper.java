@@ -1,20 +1,11 @@
 package kdp.hudlibrary;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraftforge.fluids.FluidStack;
-
-import org.lwjgl.opengl.GL11;
 
 public class ClientHelper {
 
     public static void drawFluidStack(FluidStack stack, int x, int y, int w, int h) {
-    	throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
 		/*if (stack == null || stack.getFluid() == null)
 			return;
 		Minecraft mc = Minecraft.getMinecraft();

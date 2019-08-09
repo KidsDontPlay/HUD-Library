@@ -2,10 +2,10 @@ package kdp.hudlibrary.tehud.element;
 
 import java.awt.*;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.DoubleNBT;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
-public class HUDProgressBar extends HUDElement {
+public class HUDProgressBar extends HUDElement<DoubleNBT> {
 
     private final int width, height, frameColor;
     private final int c1, c2, background;
@@ -36,10 +36,6 @@ public class HUDProgressBar extends HUDElement {
         this.background = background.getRGB();
     }
 
-    public double getFilling() {
-        return filling;
-    }
-
     public HUDProgressBar setFilling(double filling) {
         this.filling = filling;
         return this;
@@ -51,13 +47,18 @@ public class HUDProgressBar extends HUDElement {
     }
 
     @Override
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(DoubleNBT tag) {
         if (reader != null) {
             reader.accept(this, tag);
-            return;
+            return this;
         }
-        if (tag.contains("filling"))
-            filling = tag.getDouble("filling");
+        filling = tag.getDouble();
+        return this;
+    }
+
+    //@Override
+    public DoubleNBT write() {
+        return new DoubleNBT(filling);
     }
 
     @Override

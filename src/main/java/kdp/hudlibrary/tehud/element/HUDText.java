@@ -7,9 +7,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.StringNBT;
 
-public class HUDText extends HUDElement {
+public class HUDText extends HUDElement<StringNBT> {
     private String text;
     private boolean shadow, unicode;
     private final boolean lineBreak;
@@ -22,17 +22,9 @@ public class HUDText extends HUDElement {
         this.lineBreak = lineBreak;
     }
 
-    public String getText() {
-        return text;
-    }
-
     public HUDText setText(String text) {
         this.text = text;
         return this;
-    }
-
-    public boolean isShadow() {
-        return shadow;
     }
 
     public HUDText setShadow(boolean shadow) {
@@ -40,18 +32,10 @@ public class HUDText extends HUDElement {
         return this;
     }
 
-    public boolean isUnicode() {
-        return unicode;
-    }
-
-    public HUDText setUnicode(boolean unicode) {
+    /*public HUDText setUnicode(boolean unicode) {
         this.unicode = unicode;
         return this;
-    }
-
-    public int getColor() {
-        return color;
-    }
+    }*/
 
     public HUDText setColor(int color) {
         this.color = color;
@@ -59,13 +43,18 @@ public class HUDText extends HUDElement {
     }
 
     @Override
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(StringNBT tag) {
         if (reader != null) {
             reader.accept(this, tag);
-            return;
+            return this;
         }
-        if (tag.contains("text"))
-            text = tag.getString("text");
+        text = tag.getString();
+        return this;
+    }
+
+    //@Override
+    public StringNBT write() {
+        return new StringNBT(text);
     }
 
     @Override

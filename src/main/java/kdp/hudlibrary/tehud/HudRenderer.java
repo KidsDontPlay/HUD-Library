@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -21,8 +20,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -42,11 +40,12 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import kdp.hudlibrary.HUDLibrary;
+import kdp.hudlibrary.ModConfig;
 import kdp.hudlibrary.tehud.element.HUDElement;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HudRenderer {
-    public static Map<DirectionPos, CompoundNBT> hudElements = new HashMap<>();
+    public static Map<DirectionPos, Map<Integer, INBT>> hudElements = new HashMap<>();
     private static Cache<DirectionPos, List<HUDElement>> cachedElements = CacheBuilder.newBuilder().maximumSize(100)
             .expireAfterWrite(250, TimeUnit.MILLISECONDS).build();
     private static Set<TileEntity> tiles = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -58,7 +57,6 @@ public class HudRenderer {
         if (event.getEntity() instanceof PlayerEntity && event.getWorld().isRemote) {
             hudElements.clear();
             tiles.clear();
-            //entities.clear();
             capaMap.invalidateAll();
             cachedElements.invalidateAll();
         }
@@ -70,11 +68,6 @@ public class HudRenderer {
             tiles = event.player.world.loadedTileEntityList.stream()
                     .filter(t -> capaMap.getUnchecked(t).isPresent() && !t.isRemoved())
                     .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
-            /*entities = Collections.newSetFromMap(new IdentityHashMap<>());
-            entities.addAll(event.player.world.getEntitiesWithinAABB(Entity.class,
-                    new AxisAlignedBB(event.player.getPositionVec().add(-11, -11, -11),
-                            event.player.getPositionVec().add(11, 11, 11)),
-                    e -> capaMap.getUnchecked(e).isPresent() && e.isAlive()));*/
 
         }
     }
@@ -85,18 +78,18 @@ public class HudRenderer {
         PlayerEntity player = mc.player;
         Vec3d playerPosition = player.getEyePosition(event.getPartialTicks());
         Vec3d see = player.getLook(event.getPartialTicks());
-        List<TileEntity> l = tiles.stream()
-                .filter(t -> t.getPos().distanceSq(playerPosition.x, playerPosition.y, playerPosition.z, false) < 500)
-                .sorted((b, a) -> {
-                    Vec3d va = new Vec3d(a.getPos()).add(.5, 1, .5);
-                    Vec3d vb = new Vec3d(b.getPos()).add(.5, 1, .5);
-                    return Double.compare(playerPosition.squareDistanceTo(va), playerPosition.squareDistanceTo(vb));
-                }).collect(Collectors.toList());
+        List<TileEntity> l = tiles.stream().filter(/*TODO check*/t -> t.getPos()
+                .distanceSq(playerPosition.x, playerPosition.y, playerPosition.z, false) < ModConfig.visibleDistance
+                .get() * ModConfig.visibleDistance.get()).sorted((b, a) -> {
+            Vec3d va = new Vec3d(a.getPos()).add(.5, 1, .5);
+            Vec3d vb = new Vec3d(b.getPos()).add(.5, 1, .5);
+            return Double.compare(playerPosition.squareDistanceTo(va), playerPosition.squareDistanceTo(vb));
+        }).collect(Collectors.toList());
 
-        MutableInt counter = new MutableInt(l.size() - HUDLibrary.maxHUDs.get());
+        MutableInt counter = new MutableInt(l.size() - ModConfig.maxHUDs.get());
         l.forEach(t -> {
             IHUDProvider hud = capaMap.getUnchecked(t).orElse(null);
-            if (counter.getAndAdd(-1) > 0 || hud == null) {
+            if (hud == null || counter.getAndAdd(-1) > 0) {
                 return;
             }
             final BlockPos blockPos = t.getPos();
@@ -112,8 +105,9 @@ public class HudRenderer {
 
             List<HUDElement> elements;
             try {
-                elements = cachedElements.get(DirectionPos.of(blockPos, face.getOpposite()),
-                        () -> hud.getElements(player, face.getOpposite()));
+                DirectionPos dp = DirectionPos.of(blockPos, face.getOpposite());
+                elements = cachedElements
+                        .get(dp, () -> hud.getElements(player, face.getOpposite(), hudElements.get(dp)));
             } catch (ExecutionException e1) {
                 throw new RuntimeException(e1);
             }
@@ -122,15 +116,15 @@ public class HudRenderer {
             }
 
             // use synced data
-            CompoundNBT n = hud.readingSide().isServer() ?
+            /*CompoundNBT n = hud.readingSide().isServer() ?
                     hudElements.get(DirectionPos.of(blockPos, face.getOpposite())) :
                     null;
             Optional.ofNullable(n).map(nn -> (ListNBT) nn.get("list")).ifPresent(lis -> {
                 int size = Math.min(elements.size(), lis.size());
                 for (int i = 0; i < size; i++) {
-                    elements.get(i).readSyncTag(lis.getCompound(i));
+                    elements.get(i).read(lis.getCompound(i));
                 }
-            });
+            });*/
 
             double x = blockPos.getX() - TileEntityRendererDispatcher.staticPlayerX;
             double y = blockPos.getY() - TileEntityRendererDispatcher.staticPlayerY;
@@ -154,7 +148,7 @@ public class HudRenderer {
 
             GlStateManager.enableRescaleNormal();
             // translate to correct position
-            final int width = hud.width(player, face.getOpposite());
+            final int width = hud.getWidth(player, face.getOpposite());
             final int effectiveWidth = width - getMargin(hud, true);
             final int height = elements.stream().mapToInt(e -> e.getDimension(effectiveWidth - //
                     e.getPadding(IHUDProvider.SpacingDirection.LEFT) - //
@@ -162,26 +156,26 @@ public class HudRenderer {
                     e.getPadding(IHUDProvider.SpacingDirection.TOP) + //
                     e.getPadding(IHUDProvider.SpacingDirection.BOTTOM)).sum() + //
                     getMargin(hud, false);
-            double totalScale = MathHelper.clamp(hud.totalScale(mc.player, face.getOpposite()), .1, 50.);
+            double totalScale = MathHelper.clamp(hud.getScale(mc.player, face.getOpposite()), .1, 50.);
             GlStateManager.translated(//
-                    -.5 * totalScale + hud.offset(player, face.getOpposite(), IHUDProvider.Axis.HORIZONTAL),//
-                    1 * totalScale + hud.offset(player, face.getOpposite(), IHUDProvider.Axis.VERTICAL),//
-                    0 + hud.offset(player, face.getOpposite(), IHUDProvider.Axis.NORMAL) + .5001);
+                    -.5 * totalScale + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.HORIZONTAL),//
+                    1 * totalScale + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.VERTICAL),//
+                    0 + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.NORMAL) + .5001);
 
-            final float scaledWidth = 1f / width;
-            GlStateManager.scaled(scaledWidth, -scaledWidth, scaledWidth);
             //				GlStateManager.glNormal3f(0.0F, 0.0F, -f);
             GlStateManager.depthMask(false);
+            final double scaledWidth = 1. / width;
+            GlStateManager.scaled(scaledWidth, -scaledWidth, .01);
+            GlStateManager.translated(0, width - height, 0);
 
             GlStateManager.scaled(totalScale, totalScale, totalScale);
             int color = hud.getBackgroundColor(player, face.getOpposite());
-            GuiUtils.drawGradientRect(0, 0, width - height, width, width, color, color);
+            GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
 
             // translate margin
             GlStateManager.translated(hud.getMargin(IHUDProvider.SpacingDirection.LEFT),
                     hud.getMargin(IHUDProvider.SpacingDirection.TOP),
                     0);
-            GlStateManager.translated(0, width - height, 0);
             //				GlStateManager.translate(0, 0, .003);
             render(elements, effectiveWidth);
 

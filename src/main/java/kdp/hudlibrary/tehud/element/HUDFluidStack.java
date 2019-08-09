@@ -7,7 +7,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import kdp.hudlibrary.ClientHelper;
 
-public class HUDFluidStack extends HUDElement {
+public class HUDFluidStack extends HUDElement<CompoundNBT> {
 
     private FluidStack stack;
     private final int width, height;
@@ -17,10 +17,6 @@ public class HUDFluidStack extends HUDElement {
         this.stack = stack;
         this.width = width;
         this.height = height;
-    }
-
-    public FluidStack getStack() {
-        return stack;
     }
 
     public HUDFluidStack setStack(FluidStack stack) {
@@ -34,13 +30,18 @@ public class HUDFluidStack extends HUDElement {
     }
 
     @Override
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(CompoundNBT tag) {
         if (reader != null) {
             reader.accept(this, tag);
-            return;
+            return this;
         }
-        if (tag.contains("stack"))
-            stack = FluidStack.loadFluidStackFromNBT(tag.getCompound("stack"));
+        stack = FluidStack.loadFluidStackFromNBT(tag);
+        return this;
+    }
+
+    //@Override
+    public CompoundNBT write() {
+        return stack.writeToNBT(new CompoundNBT());
     }
 
     @Override

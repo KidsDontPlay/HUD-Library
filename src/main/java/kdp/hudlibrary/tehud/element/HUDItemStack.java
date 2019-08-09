@@ -12,7 +12,7 @@ import net.minecraft.nbt.CompoundNBT;
 
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public class HUDItemStack extends HUDElement {
+public class HUDItemStack extends HUDElement<CompoundNBT> {
     private static final Dimension dim16 = new Dimension(16, 16);
     private static final Dimension dim0 = new Dimension();
 
@@ -20,13 +20,12 @@ public class HUDItemStack extends HUDElement {
     private boolean overlay = true;
     private int customSize = -1;
 
+    public HUDItemStack() {
+    }
+
     public HUDItemStack(ItemStack stack) {
         super();
         this.stack = stack;
-    }
-
-    public ItemStack getStack() {
-        return stack;
     }
 
     public HUDItemStack setStack(ItemStack stack) {
@@ -34,12 +33,13 @@ public class HUDItemStack extends HUDElement {
         return this;
     }
 
-    public boolean isOverlay() {
-        return overlay;
-    }
-
     public HUDItemStack setOverlay(boolean overlay) {
         this.overlay = overlay;
+        return this;
+    }
+
+    public HUDItemStack setCustomSize(int customSize) {
+        this.customSize = customSize;
         return this;
     }
 
@@ -49,17 +49,28 @@ public class HUDItemStack extends HUDElement {
     }
 
     @Override
-    public void readSyncTag(CompoundNBT tag) {
+    public HUDElement read(CompoundNBT tag) {
         if (reader != null) {
             reader.accept(this, tag);
-            return;
+            return this;
         }
-        if (tag.contains("stack"))
-            stack = ItemStack.read(tag.getCompound("stack"));
-        if (tag.contains("customSize"))
+        stack = ItemStack.read(tag);
+        if (tag.contains("customSize")) {
             customSize = tag.getInt("customSize");
-        if (customSize > 0)
-            stack.setCount(customSize);
+            if (customSize > 0) {
+                stack.setCount(customSize);
+            }
+        }
+        return this;
+    }
+
+    //@Override
+    public CompoundNBT write() {
+        CompoundNBT nbt = stack.write(new CompoundNBT());
+        if (customSize > 0) {
+            nbt.putInt("customSize", customSize);
+        }
+        return nbt;
     }
 
     @Override
@@ -67,7 +78,7 @@ public class HUDItemStack extends HUDElement {
         if (stack.isEmpty())
             return;
         int scaleFactor = 1000;
-        //		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        //GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         RenderHelper.enableGUIStandardItemLighting();
         GlStateManager.pushMatrix();
         //GlStateManager.depthMask(true);

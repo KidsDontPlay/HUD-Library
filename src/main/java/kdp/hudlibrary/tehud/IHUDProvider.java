@@ -1,17 +1,19 @@
 package kdp.hudlibrary.tehud;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.util.Direction;
 import net.minecraftforge.fml.LogicalSide;
 
 import kdp.hudlibrary.tehud.element.HUDElement;
 
-public interface IHUDProvider<T> {
+public interface IHUDProvider {
 
     //<client>
 
@@ -19,7 +21,7 @@ public interface IHUDProvider<T> {
         return 0x44CCCCFF;
     }
 
-    default double totalScale(PlayerEntity player, Direction facing) {
+    default double getScale(PlayerEntity player, Direction facing) {
         return 1;
     }
 
@@ -27,11 +29,11 @@ public interface IHUDProvider<T> {
         return true;
     }
 
-    default double offset(PlayerEntity player, Direction facing, Axis axis) {
+    default double getOffset(PlayerEntity player, Direction facing, Axis axis) {
         return 0;
     }
 
-    default int width(PlayerEntity player, Direction facing) {
+    default int getWidth(PlayerEntity player, Direction facing) {
         return 120;
     }
 
@@ -43,15 +45,18 @@ public interface IHUDProvider<T> {
         return false;
     }
 
-    //</client>
+    List<HUDElement> getElements(PlayerEntity player, Direction facing, @Nullable Map<Integer, INBT> data);
 
-    List<HUDElement> getElements(PlayerEntity player, Direction facing);
+    //</client>
 
     default LogicalSide readingSide() {
         return LogicalSide.CLIENT;
     }
 
-    Map<Integer, Function<T, CompoundNBT>> getNBTData(PlayerEntity player, Direction facing);
+    @Nonnull
+    default Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
+        return Collections.emptyMap();
+    }
 
     /**
      * Called on server
