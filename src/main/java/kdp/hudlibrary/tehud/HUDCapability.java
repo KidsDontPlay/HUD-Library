@@ -10,7 +10,7 @@ import net.minecraftforge.common.capabilities.CapabilityManager;
 public class HUDCapability {
 
     @CapabilityInject(IHUDProvider.class)
-    public static Capability<IHUDProvider> cap;
+    public static final Capability<IHUDProvider> cap = null;
 
     public static void register() {
         CapabilityManager.INSTANCE.register(IHUDProvider.class, new IStorage<IHUDProvider>() {

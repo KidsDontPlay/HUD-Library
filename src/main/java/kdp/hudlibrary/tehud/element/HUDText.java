@@ -52,11 +52,6 @@ public class HUDText extends HUDElement<StringNBT> {
         return this;
     }
 
-    //@Override
-    public StringNBT write() {
-        return new StringNBT(text);
-    }
-
     @Override
     protected Dimension dimension(int maxWidth) {
         if (text.isEmpty()) {

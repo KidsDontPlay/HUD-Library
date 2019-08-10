@@ -45,7 +45,7 @@ public class HUDItemStack extends HUDElement<CompoundNBT> {
 
     @Override
     protected Dimension dimension(int maxWidth) {
-        return stack.isEmpty() ? dim0 : dim16;
+        return stack.isEmpty() || maxWidth < 16 ? dim0 : dim16;
     }
 
     @Override
@@ -64,18 +64,9 @@ public class HUDItemStack extends HUDElement<CompoundNBT> {
         return this;
     }
 
-    //@Override
-    public CompoundNBT write() {
-        CompoundNBT nbt = stack.write(new CompoundNBT());
-        if (customSize > 0) {
-            nbt.putInt("customSize", customSize);
-        }
-        return nbt;
-    }
-
     @Override
     public void draw(int maxWidth) {
-        if (stack.isEmpty())
+        if (stack.isEmpty() || maxWidth < 16)
             return;
         int scaleFactor = 1000;
         //GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -92,7 +83,7 @@ public class HUDItemStack extends HUDElement<CompoundNBT> {
             GlStateManager.disableLighting();
             //GlStateManager.disableDepthTest();
             GlStateManager.disableBlend();
-            GlStateManager.translated(0, 0, scaleFactor + 1);
+            GlStateManager.translated(0, 0, scaleFactor + 1.);
             Minecraft.getInstance().fontRenderer.drawStringWithShadow(s,
                     (float) (19 - 2 - Minecraft.getInstance().fontRenderer.getStringWidth(s)),
                     (float) (6 + 3),
@@ -109,8 +100,8 @@ public class HUDItemStack extends HUDElement<CompoundNBT> {
     }
 
     @Override
-    public int getPadding(IHUDProvider.SpacingDirection dir) {
-        return stack.isEmpty() ? 0 : super.getPadding(dir);
+    public int getMargin(IHUDProvider.MarginDirection dir) {
+        return stack.isEmpty() ? 0 : super.getMargin(dir);
     }
 
 }

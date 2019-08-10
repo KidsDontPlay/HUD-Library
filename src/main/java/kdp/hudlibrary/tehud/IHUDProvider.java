@@ -18,7 +18,7 @@ public interface IHUDProvider {
     //<client>
 
     default int getBackgroundColor(PlayerEntity player, Direction facing) {
-        return 0x44CCCCFF;
+        return defaultBack;
     }
 
     default double getScale(PlayerEntity player, Direction facing) {
@@ -37,7 +37,7 @@ public interface IHUDProvider {
         return 120;
     }
 
-    default int getMargin(SpacingDirection dir) {
+    default int getMargin(MarginDirection dir) {
         return 2;
     }
 
@@ -45,6 +45,13 @@ public interface IHUDProvider {
         return false;
     }
 
+    /**
+     *
+     * @param player
+     * @param facing
+     * @param data is null if {@link #readingSide()} returns {@link LogicalSide#CLIENT}
+     * @return
+     */
     List<HUDElement> getElements(PlayerEntity player, Direction facing, @Nullable Map<Integer, INBT> data);
 
     //</client>
@@ -77,7 +84,7 @@ public interface IHUDProvider {
         NORMAL;
     }
 
-    enum SpacingDirection {
+    enum MarginDirection {
         TOP, RIGHT, BOTTOM, LEFT;
 
         public boolean isHorizontal() {
@@ -88,5 +95,7 @@ public interface IHUDProvider {
             return this == TOP || this == BOTTOM;
         }
     }
+
+    int defaultBack = 0xBBBBBBDD;
 
 }

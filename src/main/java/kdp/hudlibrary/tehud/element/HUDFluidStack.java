@@ -39,11 +39,6 @@ public class HUDFluidStack extends HUDElement<CompoundNBT> {
         return this;
     }
 
-    //@Override
-    public CompoundNBT write() {
-        return stack.writeToNBT(new CompoundNBT());
-    }
-
     @Override
     public void draw(int maxWidth) {
         ClientHelper.drawFluidStack(stack, 0, 0, width < 0 ? maxWidth : width, height);

@@ -56,11 +56,6 @@ public class HUDProgressBar extends HUDElement<DoubleNBT> {
         return this;
     }
 
-    //@Override
-    public DoubleNBT write() {
-        return new DoubleNBT(filling);
-    }
-
     @Override
     public void draw(int maxWidth) {
         int w = Math.min(this.width < 0 ? maxWidth : this.width, maxWidth);

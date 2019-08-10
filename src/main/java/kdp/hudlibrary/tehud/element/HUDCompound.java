@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.Lists;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.nbt.INBT;
@@ -14,6 +17,7 @@ import net.minecraft.nbt.ListNBT;
 
 import org.apache.commons.lang3.Validate;
 
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import kdp.hudlibrary.tehud.IHUDProvider;
 
 public class HUDCompound extends HUDElement<ListNBT> {
@@ -25,6 +29,7 @@ public class HUDCompound extends HUDElement<ListNBT> {
         this.elements = elements;
         this.lineBreak = lineBreak;
         Validate.isTrue(elements != null && elements.length != 0);
+        setMargin(0);
     }
 
     public HUDCompound(boolean lineBreak, Collection<? extends HUDElement> lis) {
@@ -47,25 +52,15 @@ public class HUDCompound extends HUDElement<ListNBT> {
         return this;
     }
 
-    //@Override
-    /*public ListNBT write() {
-        return Arrays.stream(elements).map(h -> h.write()).collect(Collectors.toCollection(ListNBT::new));
-    }*/
-
     private List<List<HUDElement>> getElementRows(int maxWidth) {
         List<List<HUDElement>> lines = new ArrayList<>();
         List<HUDElement> line = new ArrayList<>();
-        List<HUDElement> ls = Lists.newArrayList(elements);
+        List<HUDElement> ls = new ArrayList<>(Arrays.asList(elements));
         while (!ls.isEmpty()) {
             HUDElement el = ls.remove(0);
-            int width = el.getDimension(maxWidth - el.getPadding(IHUDProvider.SpacingDirection.LEFT) - el
-                    .getPadding(IHUDProvider.SpacingDirection.RIGHT)).width + el
-                    .getPadding(IHUDProvider.SpacingDirection.LEFT) + el
-                    .getPadding(IHUDProvider.SpacingDirection.RIGHT);
-            if (maxWidth < line.stream().mapToInt(e -> e
-                    .getDimension(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                            .getPadding(IHUDProvider.SpacingDirection.RIGHT)).width + e
-                    .getPadding(IHUDProvider.SpacingDirection.LEFT) + e.getPadding(IHUDProvider.SpacingDirection.RIGHT))
+            int width = el.getDimension(maxWidth - el.getMarginHorizontal()).width + el.getMarginHorizontal();
+            if (maxWidth < line.stream()
+                    .mapToInt(e -> e.getDimension(maxWidth - el.getMarginHorizontal()).width + el.getMarginHorizontal())
                     .sum() + width) {
                 lines.add(new ArrayList<>(line));
                 line.clear();
@@ -81,45 +76,34 @@ public class HUDCompound extends HUDElement<ListNBT> {
 
     @Override
     protected Dimension dimension(int maxWidth) {
-        Dimension d = null;
+        if (elements.length == 0) {
+            return new Dimension();
+        }
+        Dimension d;
         if (lineBreak) {
             int totalWidth = 0, totalHeight = 0;
             for (List<HUDElement> l : getElementRows(maxWidth)) {
                 totalWidth = Math.max(totalWidth,
-                        l.stream().mapToInt(e -> e
-                                .getDimension(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                                        .getPadding(IHUDProvider.SpacingDirection.RIGHT)).width + e
-                                .getPadding(IHUDProvider.SpacingDirection.LEFT) + e
-                                .getPadding(IHUDProvider.SpacingDirection.RIGHT)).sum());
-                totalHeight += l.stream().mapToInt(e -> e
-                        .getDimension(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                                .getPadding(IHUDProvider.SpacingDirection.RIGHT)).height + e
-                        .getPadding(IHUDProvider.SpacingDirection.TOP) + e
-                        .getPadding(IHUDProvider.SpacingDirection.BOTTOM)).max().getAsInt();
+                        l.stream()
+                                .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).width + e.getMarginHorizontal())
+                                .sum());
+                totalHeight += l.stream()
+                        .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
+                        .getAsInt();
             }
             d = new Dimension(totalWidth, totalHeight);
         } else {
-            int part = maxWidth / elements.length;
-            if (true)
-                part = maxWidth;
             int totalWidth = 0, totalHeight = 0;
+            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(maxWidth - Arrays.stream(elements)
+                    .mapToInt(HUDElement::getMarginHorizontal).sum());
             for (HUDElement e : elements) {
-                totalWidth += e.getDimension(part - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                        .getPadding(IHUDProvider.SpacingDirection.RIGHT)).width + e
-                        .getPadding(IHUDProvider.SpacingDirection.LEFT) + e
-                        .getPadding(IHUDProvider.SpacingDirection.RIGHT);
+                totalWidth += e.getDimension(maxWidths.getInt(e) ).width + e.getMarginHorizontal();
                 totalHeight = Math.max(totalHeight,
-                        e.getDimension(part - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                                .getPadding(IHUDProvider.SpacingDirection.RIGHT)).height + e
-                                .getPadding(IHUDProvider.SpacingDirection.TOP) + e
-                                .getPadding(IHUDProvider.SpacingDirection.BOTTOM));
+                        e.getDimension(maxWidths.getInt(e) ).height + e.getMarginVertical());
             }
-            //				totalWidth -= elements[0].getPadding(Direction.LEFT);
-            //				totalWidth -= elements[elements.length - 1].getPadding(Direction.RIGHT);
-            int width = totalWidth;
-            boolean tooLong = width > maxWidth;
+            boolean tooLong = totalWidth > maxWidth;
             if (tooLong) {
-                double fac = maxWidth / (double) width;
+                double fac = maxWidth / (double) totalWidth;
                 totalHeight *= fac;
             }
             d = new Dimension(totalWidth, totalHeight);
@@ -129,6 +113,9 @@ public class HUDCompound extends HUDElement<ListNBT> {
 
     @Override
     public void draw(int maxWidth) {
+        if (elements.length == 0) {
+            return;
+        }
         if (lineBreak) {
             int hei = 0;
             boolean firstH = true;
@@ -137,7 +124,7 @@ public class HUDCompound extends HUDElement<ListNBT> {
                 if (firstH) {
                     firstH = false;
                     GlStateManager.translated(0,
-                            down = l.stream().mapToInt(e -> e.getPadding(IHUDProvider.SpacingDirection.TOP)).max()
+                            down = l.stream().mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
                                     .getAsInt(),
                             0);
                 }
@@ -147,66 +134,56 @@ public class HUDCompound extends HUDElement<ListNBT> {
                     GlStateManager.depthMask(false);
                     if (firstW) {
                         firstW = false;
-                        int pad = e.getPadding(IHUDProvider.SpacingDirection.LEFT);
-                        back += pad;
-                        GlStateManager.translated(pad, 0, 0);
+                        int mar = e.getMargin(IHUDProvider.MarginDirection.LEFT);
+                        back += mar;
+                        GlStateManager.translated(mar, 0, 0);
                     }
-                    int w = e.getDimension(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                            .getPadding(IHUDProvider.SpacingDirection.RIGHT)).width + e
-                            .getPadding(IHUDProvider.SpacingDirection.LEFT) + e
-                            .getPadding(IHUDProvider.SpacingDirection.RIGHT);
+                    int w = e.getDimension(maxWidth - e.getMarginHorizontal()).width + e.getMarginHorizontal();
                     back += w;
-                    e.draw(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                            .getPadding(IHUDProvider.SpacingDirection.RIGHT));
+                    e.draw(maxWidth - e.getMarginHorizontal());
                     GlStateManager.translated(w, 0, 0);
                 }
-                int h = l.stream().mapToInt(e -> e
-                        .getDimension(maxWidth - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                                .getPadding(IHUDProvider.SpacingDirection.RIGHT)).height + e
-                        .getPadding(IHUDProvider.SpacingDirection.TOP) + e
-                        .getPadding(IHUDProvider.SpacingDirection.BOTTOM)).max().getAsInt();
+                int h = l.stream()
+                        .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
+                        .getAsInt();
                 hei += h;
                 GlStateManager.translated(0, h - down, 0);
                 GlStateManager.translated(-back, 0, 0);
             }
             GlStateManager.translated(0, -hei, 0);
         } else {
-            int width = dimension(maxWidth).width;
-            int height = dimension(maxWidth).height;
+            int width = getDimension(maxWidth).width;
+            int height = getDimension(maxWidth).height;
             boolean tooLong = width > maxWidth;
             double fac = maxWidth / (double) width;
             if (tooLong) {
                 GlStateManager.scaled(fac, fac, 1);
             }
-            int part = maxWidth / elements.length;
-            if (true)
-                part = maxWidth;
             int down = 0;
             GlStateManager.translated(0,
-                    down = Arrays.stream(elements).mapToInt(e -> e.getPadding(IHUDProvider.SpacingDirection.TOP)).max()
+                    down = Arrays.stream(elements).mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
                             .getAsInt(),
                     0);
             int back = 0;
             boolean first = true;
+            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(maxWidth - Arrays.stream(elements)
+                    .mapToInt(HUDElement::getMarginHorizontal).sum());
             for (HUDElement e : elements) {
                 GlStateManager.depthMask(false);
                 if (first) {
                     first = false;
-                    int pad = e.getPadding(IHUDProvider.SpacingDirection.LEFT);
-                    back += pad;
-                    GlStateManager.translated(pad, 0, 0);
+                    int mar = e.getMargin(IHUDProvider.MarginDirection.LEFT);
+                    back += mar;
+                    GlStateManager.translated(mar, 0, 0);
                 }
-                Dimension dim = e.getDimension(part - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                        .getPadding(IHUDProvider.SpacingDirection.RIGHT));
+                Dimension dim = e.getDimension(maxWidths.getInt(e));
                 int up = 0;
-                int free = height - dim.height - e.getPaddingVertical();
+                int free = height - dim.height - e.getMarginVertical();
                 if (free > 0)
                     up = (int) Math.ceil(free / (double) 2);
                 GlStateManager.translated(0, up, 0);
-                e.draw(part - e.getPadding(IHUDProvider.SpacingDirection.LEFT) - e
-                        .getPadding(IHUDProvider.SpacingDirection.RIGHT));
-                int w = dim.width + e.getPadding(IHUDProvider.SpacingDirection.LEFT) + e
-                        .getPadding(IHUDProvider.SpacingDirection.RIGHT);
+                e.draw(maxWidths.getInt(e));
+                int w = dim.width + e.getMarginHorizontal();
                 back += w;
                 GlStateManager.translated(0, -up, 0);
                 GlStateManager.translated(w, 0, 0);
@@ -219,4 +196,44 @@ public class HUDCompound extends HUDElement<ListNBT> {
         }
     }
 
+    private Cache<Integer, Reference2IntOpenHashMap<HUDElement>> cache = CacheBuilder.newBuilder()
+            .expireAfterWrite(500, TimeUnit.MILLISECONDS).build();
+
+    private Reference2IntOpenHashMap<HUDElement> getMaxWidths(int maxWidth) {
+        try {
+            return cache.get(maxWidth, () -> {
+                final int splittedWidth = maxWidth / elements.length;
+                List<HUDElement> flexibles = new ArrayList<>();
+                List<HUDElement> unflexibles = new ArrayList<>();
+                for (HUDElement e : elements) {
+                    int width1 = e.getDimension(maxWidth).width;
+                    int width2 = e.getDimension(splittedWidth).width;
+                    if (width1 > width2) {
+                        flexibles.add(e);
+                    } else if (width1 == width2) {
+                        unflexibles.add(e);
+                    } else {
+                        throw new IllegalStateException("Unreasonable!");
+                    }
+                }
+                Reference2IntOpenHashMap<HUDElement> result = new Reference2IntOpenHashMap<>();
+                int unflexiblesWidth = 0;
+                for (HUDElement e : unflexibles) {
+                    int w = e.getDimension(splittedWidth).width;
+                    unflexiblesWidth += w;
+                    result.put(e, w);
+                }
+                if (!flexibles.isEmpty()) {
+                    final int splittedFlexiblesWidth = (maxWidth - unflexiblesWidth) / flexibles.size();
+                    for (HUDElement e : flexibles) {
+                        result.put(e, splittedFlexiblesWidth);
+                    }
+                }
+
+                return result;
+            });
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

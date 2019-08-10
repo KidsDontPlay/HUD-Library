@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -17,7 +18,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import io.netty.buffer.ByteBuf;
@@ -37,17 +37,16 @@ public class HUDSyncMessage {
     public HUDSyncMessage(PlayerEntity player, int radius) {
         try {
             for (TileEntity t : player.world.loadedTileEntityList) {
-                LazyOptional<IHUDProvider> hudOp = t.getCapability(HUDCapability.cap);
-                if (hudOp.isPresent() && player.getPositionVector()
+                IHUDProvider hud = t.getCapability(HUDCapability.cap).orElse(null);
+                if (hud != null && hud.readingSide().isServer() && hud.needsSync() && player.getPositionVector()
                         .squareDistanceTo(new Vec3d(t.getPos())) < radius * radius) {
-                    IHUDProvider hud = hudOp.orElse(null);
-                    if (hud.readingSide().isServer() && hud.needsSync()) {
-                        for (Direction f : Direction.values()) {
-                            if (f.getAxis() == Direction.Axis.Y) {
-                                continue;
-                            }
-                            map.put(DirectionPos.of(t.getPos(), f), hud.getNBTData(player, f));
+                    for (Direction f : Direction.values()) {
+                        if (f.getAxis() == Direction.Axis.Y) {
+                            continue;
                         }
+                        map.put(DirectionPos.of(t.getPos(), f),
+                                Objects.requireNonNull(hud.getNBTData(player, f),
+                                        "IHUDProvider#getNBTData must not return null."));
                     }
                 }
             }
@@ -58,7 +57,7 @@ public class HUDSyncMessage {
 
     public void onMessage(HUDSyncMessage message, NetworkEvent.Context ctx) {
         Map<DirectionPos, Map<Integer, INBT>> map = message.map;
-        ctx.enqueueWork(() -> HudRenderer.hudElements.putAll(map));
+        ctx.enqueueWork(() -> HUDRenderer.hudElements.putAll(map));
     }
 
     public void decode(ByteBuf buf) {
@@ -76,7 +75,7 @@ public class HUDSyncMessage {
                     .of(BlockPos.fromLong(nbt.getLong(i + POS)), Direction.byIndex(nbt.getInt(i + FACE)));
             Int2ObjectOpenHashMap nbts = new Int2ObjectOpenHashMap();
             CompoundNBT mapNBT = nbt.getCompound(i + TAG);
-            mapNBT.keySet().forEach(s -> nbts.put(Integer.valueOf(s), mapNBT.get(s)));
+            mapNBT.keySet().forEach(s -> nbts.put(Integer.parseInt(s), mapNBT.get(s)));
             map.put(dp, nbts);
         }
     }
