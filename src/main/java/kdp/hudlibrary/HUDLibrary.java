@@ -1,6 +1,6 @@
 package kdp.hudlibrary;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,7 +16,6 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -112,8 +111,8 @@ public class HUDLibrary {
                     }
 
                     @Override
-                    public boolean is360degrees(PlayerEntity player) {
-                        return IHUDProvider.super.is360degrees(player);
+                    public boolean smoothRotation(PlayerEntity player) {
+                        return IHUDProvider.super.smoothRotation(player);
                     }
 
                     @Override
@@ -124,13 +123,15 @@ public class HUDLibrary {
                                     .mapToObj(ii -> RandomStringUtils.randomAlphabetic(4, 9))
                                     .collect(Collectors.joining(" ")), breac).setColor(0x6959CD);
                         }).collect(Collectors.toList())));*/
-                        return Arrays
-                                .asList(new HUDTexture(new ResourceLocation("textures/gui/icons.png"), 53, 1, 7, 7));
+                        List<HUDElement> list = new ArrayList<>();
+                        list.add(new HUDTexture(new ResourceLocation("textures/gui/icons.png"), 53, 1, 7, 7));
+                        //list.add(new HUDFluidStack(new FluidStack(),30,100));
+                        return list;
                     }
 
                     @Override
-                    public LogicalSide readingSide() {
-                        return IHUDProvider.super.readingSide();
+                    public boolean usesServerData() {
+                        return IHUDProvider.super.usesServerData();
                     }
 
                     @Override

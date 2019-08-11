@@ -36,7 +36,7 @@ public class HUDSyncMessage {
         try {
             for (TileEntity t : player.world.loadedTileEntityList) {
                 IHUDProvider hud = t.getCapability(HUDCapability.cap).orElse(null);
-                if (hud != null && hud.readingSide().isServer() && hud.needsSync() && player.getPositionVector()
+                if (hud != null && hud.usesServerData() && hud.needsSync() && player.getPositionVector()
                         .squareDistanceTo(new Vec3d(t.getPos())) < radius * radius) {
                     for (Direction f : Direction.values()) {
                         if (f.getAxis() == Direction.Axis.Y) {

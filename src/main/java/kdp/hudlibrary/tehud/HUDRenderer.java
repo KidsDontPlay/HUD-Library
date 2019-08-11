@@ -107,7 +107,7 @@ public class HUDRenderer {
             try {
                 DirectionPos dp = DirectionPos.of(blockPos, face.getOpposite());
                 CompoundNBT data = hudElements.get(dp);
-                if (data == null && hud.readingSide().isServer()) {
+                if (data == null && hud.usesServerData()) {
                     elements = null;
                 } else {
                     elements = cachedElements.get(dp, () -> hud.getElements(player, face.getOpposite(), data));
@@ -130,7 +130,7 @@ public class HUDRenderer {
 
             // rotate to the player
             double f1 = 0;
-            if (hud.is360degrees(player)) {
+            if (hud.smoothRotation(player)) {
                 f1 = (180 * (Math.atan2(v.x, v.z) + Math.PI)) / Math.PI;
             } else {
                 f1 = face.getHorizontalIndex() * 90.;

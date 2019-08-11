@@ -41,7 +41,6 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.common.util.TextTable;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
@@ -364,8 +363,8 @@ public class VanillaImpl {
         }
 
         @Override
-        public boolean is360degrees(PlayerEntity player) {
-            return HUDConfig.config(tile).is360();
+        public boolean smoothRotation(PlayerEntity player) {
+            return HUDConfig.config(tile).isSmooth();
         }
 
         @Override
@@ -401,8 +400,8 @@ public class VanillaImpl {
         }
 
         @Override
-        public LogicalSide readingSide() {
-            return LogicalSide.SERVER;
+        public boolean usesServerData() {
+            return true;
         }
     }
 }

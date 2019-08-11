@@ -48,7 +48,7 @@ public class HUDConfig {
                         .define("focus", VanillaImpl.defaultFocus.getBoolean(clazz));
                 tc.sneak = b.comment("Player must sneak to see HUD")
                         .define("sneak", VanillaImpl.defaultSneak.getBoolean(clazz));
-                tc._360 = b.define("360", false);
+                tc.smooth = b.comment("Smooth rotation of HUD").define("smooth", false);
                 tc.background = b.comment("Background color in hex")
                         .define("backgroundColor", VanillaImpl.defaultBack.get(clazz));
                 tc.fontColor = b.comment("Font color in hex").define("fontColor", VanillaImpl.defaultFont.get(clazz));
@@ -72,7 +72,7 @@ public class HUDConfig {
         private ForgeConfigSpec.IntValue width;
         private ForgeConfigSpec.BooleanValue focus;
         private ForgeConfigSpec.BooleanValue sneak;
-        private ForgeConfigSpec.BooleanValue _360;
+        private ForgeConfigSpec.BooleanValue smooth;
 
         public boolean isEnabled() {
             return enabled.get();
@@ -106,8 +106,8 @@ public class HUDConfig {
             return sneak.get();
         }
 
-        public boolean is360() {
-            return _360.get();
+        public boolean isSmooth() {
+            return smooth.get();
         }
     }
 }

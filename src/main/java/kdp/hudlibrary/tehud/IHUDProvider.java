@@ -1,75 +1,140 @@
 package kdp.hudlibrary.tehud;
 
 import java.util.List;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraftforge.fml.LogicalSide;
 
 import kdp.hudlibrary.tehud.element.HUDElement;
 
 public interface IHUDProvider {
 
-    //<client>
-
+    /**
+     * Returns the background color for the HUD.
+     *
+     * Called on client.
+     *
+     * @return the background color
+     */
     default int getBackgroundColor(PlayerEntity player, Direction facing) {
         return defaultBack;
     }
 
+    /**
+     * Returns the scale of the HUD.
+     * By default the HUD is as wide as one block.
+     *
+     * Called on client.
+     *
+     * @return the scale
+     */
     default double getScale(PlayerEntity player, Direction facing) {
         return 1;
     }
 
+    /**
+     * Determines if the HUD is visible to the player.
+     *
+     * Called on client.
+     *
+     * @return true if HUD is visible
+     */
     default boolean isVisible(PlayerEntity player, Direction facing) {
         return true;
     }
 
+    /**
+     * Returns the offset for the given axis.
+     *
+     * Called on client.
+     *
+     * @return the offset
+     */
     default double getOffset(PlayerEntity player, Direction facing, Axis axis) {
         return 0;
     }
 
+    /**
+     * Returns the width in pixels.
+     *
+     * Called on client.
+     *
+     * @return the width in pixels
+     */
     default int getWidth(PlayerEntity player, Direction facing) {
         return 120;
     }
 
+    /**
+     * Returns the margin of the HUD to the elements.
+     *
+     * Called on client.
+     *
+     * @return the margin
+     */
     default int getMargin(MarginDirection dir) {
         return 2;
     }
 
-    default boolean is360degrees(PlayerEntity player) {
+    /**
+     * Determines if the HUD is always directed to the player.
+     * By default the HUD only faces the cardinal points.
+     *
+     * Called on client.
+     *
+     * @return true if
+     */
+    default boolean smoothRotation(PlayerEntity player) {
         return false;
     }
 
     /**
+     * Returns the list of elements in the HUD.
+     * Every element uses the whole width of the HUD.
+     * To use more elements in one line you need {@link kdp.hudlibrary.tehud.element.HUDCompound}.
+     * data is the result of {@link #getNBTData}
      *
-     * @param player
-     * @param facing
-     * @param data is null if {@link #readingSide()} returns {@link LogicalSide#CLIENT}
-     * @return
+     * Called on client.
+     *
+     * @param data is null if {@link #usesServerData()} returns false
+     * @return the elements
      */
     List<HUDElement> getElements(PlayerEntity player, Direction facing, @Nullable CompoundNBT data);
 
-    //</client>
-
-    default LogicalSide readingSide() {
-        return LogicalSide.CLIENT;
+    /**
+     * Determines if the HUD needs information from the server.
+     *
+     * Called on client and server.
+     *
+     * @return true if data from client is needed on server
+     * to be displayed
+     */
+    default boolean usesServerData() {
+        return false;
     }
 
-    @Nonnull
+    /**
+     * Returns the compound nbt that is sent to the client
+     * and given as parameter to {@link #getElements}
+     *
+     * Called on server if {@link #usesServerData} and {@link #needsSync}
+     * return true.
+     *
+     * @return the compound nbt for synchronization
+     */
     default CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
-        if (readingSide().isServer()) {
+        if (usesServerData()) {
             throw new UnsupportedOperationException();
         }
         return null;
     }
 
     /**
-     * Called on server
+     * Called on server if {@link #usesServerData()} returns true.
      *
-     * @return true if {@link #readingSide()} returns {@link LogicalSide#SERVER}
+     * @return true if {@link #usesServerData()} returns true
      * and data on server changed and client needs to know about that.
      */
     default boolean needsSync() {
@@ -77,11 +142,11 @@ public interface IHUDProvider {
     }
 
     enum Axis {
-        /** up-down */
+        /** up - down */
         VERTICAL,
-        /** left-right */
+        /** left - right */
         HORIZONTAL,
-        /** front-back */
+        /** front - back */
         NORMAL;
     }
 
