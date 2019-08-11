@@ -4,13 +4,11 @@ import java.awt.*;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import net.minecraft.nbt.INBT;
 import net.minecraftforge.common.util.TextTable.Alignment;
 
 import org.apache.commons.lang3.Validate;
@@ -19,9 +17,8 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public abstract class HUDElement<N extends INBT> {
+public abstract class HUDElement {
 
-    protected BiConsumer<HUDElement, N> reader = null;
     protected Alignment align = Alignment.LEFT;
     protected final Int2IntMap margin = new Int2IntOpenHashMap(4);
     protected Integer backgroundColor;
@@ -70,17 +67,6 @@ public abstract class HUDElement<N extends INBT> {
 
     public HUDElement setBackgroundColor(int backgroundColor) {
         this.backgroundColor = backgroundColor;
-        return this;
-    }
-
-    public HUDElement setReader(BiConsumer<HUDElement, N> reader) {
-        this.reader = reader;
-        return this;
-    }
-
-    public HUDElement read(N tag) {
-        if (reader != null)
-            reader.accept(this, tag);
         return this;
     }
 

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -12,44 +13,24 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-
-import org.apache.commons.lang3.Validate;
+import net.minecraftforge.fml.client.config.GuiUtils;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public class HUDCompound extends HUDElement<ListNBT> {
+public class HUDCompound extends HUDElement {
     protected final HUDElement[] elements;
     protected final boolean lineBreak;
 
     public HUDCompound(boolean lineBreak, HUDElement... elements) {
         super();
-        this.elements = elements;
+        this.elements = Objects.requireNonNull(elements);
         this.lineBreak = lineBreak;
-        Validate.isTrue(elements != null && elements.length != 0);
         setMargin(0);
     }
 
     public HUDCompound(boolean lineBreak, Collection<? extends HUDElement> lis) {
         this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
-    }
-
-    @Override
-    public HUDElement read(ListNBT tag) {
-        if (reader != null) {
-            reader.accept(this, tag);
-            return this;
-        }
-        //Validate.isTrue(elements.length == list.size());
-        int size = Math.min(elements.length, tag.size());
-        for (int i = 0; i < size; i++) {
-            HUDElement h = elements[i];
-            INBT nbt = tag.get(i);
-            h.read(nbt);
-        }
-        return this;
     }
 
     private List<List<HUDElement>> getElementRows(int maxWidth) {
@@ -84,12 +65,10 @@ public class HUDCompound extends HUDElement<ListNBT> {
             int totalWidth = 0, totalHeight = 0;
             for (List<HUDElement> l : getElementRows(maxWidth)) {
                 totalWidth = Math.max(totalWidth,
-                        l.stream()
-                                .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).width + e.getMarginHorizontal())
-                                .sum());
-                totalHeight += l.stream()
-                        .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
-                        .getAsInt();
+                        l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).width + e
+                                .getMarginHorizontal()).sum());
+                totalHeight += l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e
+                        .getMarginVertical()).max().getAsInt();
             }
             d = new Dimension(totalWidth, totalHeight);
         } else {
@@ -97,9 +76,8 @@ public class HUDCompound extends HUDElement<ListNBT> {
             Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(maxWidth - Arrays.stream(elements)
                     .mapToInt(HUDElement::getMarginHorizontal).sum());
             for (HUDElement e : elements) {
-                totalWidth += e.getDimension(maxWidths.getInt(e) ).width + e.getMarginHorizontal();
-                totalHeight = Math.max(totalHeight,
-                        e.getDimension(maxWidths.getInt(e) ).height + e.getMarginVertical());
+                totalWidth += e.getDimension(maxWidths.getInt(e)).width + e.getMarginHorizontal();
+                totalHeight = Math.max(totalHeight, e.getDimension(maxWidths.getInt(e)).height + e.getMarginVertical());
             }
             boolean tooLong = totalWidth > maxWidth;
             if (tooLong) {
@@ -138,14 +116,18 @@ public class HUDCompound extends HUDElement<ListNBT> {
                         back += mar;
                         GlStateManager.translated(mar, 0, 0);
                     }
-                    int w = e.getDimension(maxWidth - e.getMarginHorizontal()).width + e.getMarginHorizontal();
+                    Dimension d = e.getDimension(maxWidth - e.getMarginHorizontal());
+                    int w = d.width + e.getMarginHorizontal();
                     back += w;
+                    Integer color = e.getBackgroundColor();
+                    if (color != null) {
+                        GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, color, color);
+                    }
                     e.draw(maxWidth - e.getMarginHorizontal());
                     GlStateManager.translated(w, 0, 0);
                 }
-                int h = l.stream()
-                        .mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
-                        .getAsInt();
+                int h = l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e
+                        .getMarginVertical()).max().getAsInt();
                 hei += h;
                 GlStateManager.translated(0, h - down, 0);
                 GlStateManager.translated(-back, 0, 0);
@@ -182,6 +164,10 @@ public class HUDCompound extends HUDElement<ListNBT> {
                 if (free > 0)
                     up = (int) Math.ceil(free / (double) 2);
                 GlStateManager.translated(0, up, 0);
+                Integer color = e.getBackgroundColor();
+                if (color != null) {
+                    GuiUtils.drawGradientRect(0, 0, 0, dim.width, dim.height, color, color);
+                }
                 e.draw(maxWidths.getInt(e));
                 int w = dim.width + e.getMarginHorizontal();
                 back += w;

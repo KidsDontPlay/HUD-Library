@@ -7,9 +7,8 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.nbt.StringNBT;
 
-public class HUDText extends HUDElement<StringNBT> {
+public class HUDText extends HUDElement {
     private String text;
     private boolean shadow, unicode;
     private final boolean lineBreak;
@@ -39,16 +38,6 @@ public class HUDText extends HUDElement<StringNBT> {
 
     public HUDText setColor(int color) {
         this.color = color;
-        return this;
-    }
-
-    @Override
-    public HUDElement read(StringNBT tag) {
-        if (reader != null) {
-            reader.accept(this, tag);
-            return this;
-        }
-        text = tag.getString();
         return this;
     }
 

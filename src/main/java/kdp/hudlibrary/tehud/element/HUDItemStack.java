@@ -8,17 +8,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
 
 import kdp.hudlibrary.tehud.IHUDProvider;
 
-public class HUDItemStack extends HUDElement<CompoundNBT> {
+public class HUDItemStack extends HUDElement {
     private static final Dimension dim16 = new Dimension(16, 16);
     private static final Dimension dim0 = new Dimension();
 
     private ItemStack stack = ItemStack.EMPTY;
     private boolean overlay = true;
-    private int customSize = -1;
 
     public HUDItemStack() {
     }
@@ -38,30 +36,9 @@ public class HUDItemStack extends HUDElement<CompoundNBT> {
         return this;
     }
 
-    public HUDItemStack setCustomSize(int customSize) {
-        this.customSize = customSize;
-        return this;
-    }
-
     @Override
     protected Dimension dimension(int maxWidth) {
         return stack.isEmpty() || maxWidth < 16 ? dim0 : dim16;
-    }
-
-    @Override
-    public HUDElement read(CompoundNBT tag) {
-        if (reader != null) {
-            reader.accept(this, tag);
-            return this;
-        }
-        stack = ItemStack.read(tag);
-        if (tag.contains("customSize")) {
-            customSize = tag.getInt("customSize");
-            if (customSize > 0) {
-                stack.setCount(customSize);
-            }
-        }
-        return this;
     }
 
     @Override

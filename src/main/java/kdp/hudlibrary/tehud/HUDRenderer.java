@@ -20,7 +20,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -45,7 +45,7 @@ import kdp.hudlibrary.tehud.element.HUDElement;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HUDRenderer {
-    protected static final Map<DirectionPos, Map<Integer, INBT>> hudElements = new HashMap<>();
+    protected static final Map<DirectionPos, CompoundNBT> hudElements = new HashMap<>();
     private static Cache<DirectionPos, List<HUDElement>> cachedElements = CacheBuilder.newBuilder().maximumSize(100)
             .expireAfterWrite(250, TimeUnit.MILLISECONDS).build();
     private static Set<TileEntity> tiles = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -106,7 +106,7 @@ public class HUDRenderer {
             List<HUDElement> elements;
             try {
                 DirectionPos dp = DirectionPos.of(blockPos, face.getOpposite());
-                Map<Integer, INBT> data = hudElements.get(dp);
+                CompoundNBT data = hudElements.get(dp);
                 if (data == null && hud.readingSide().isServer()) {
                     elements = null;
                 } else {
@@ -114,7 +114,8 @@ public class HUDRenderer {
                 }
             } catch (ExecutionException e1) {
                 throw new RuntimeException(e1);
-            } if (elements == null || elements.isEmpty()) {
+            }
+            if (elements == null || elements.isEmpty()) {
                 return;
             }
 
@@ -194,7 +195,6 @@ public class HUDRenderer {
             }
             GlStateManager.translated(offsetX, marginTop, 0);
             Integer color = e.getBackgroundColor();
-            //color=0xff000000|e.hashCode();
             if (color != null) {
                 GuiUtils.drawGradientRect(0, 0, 0, d.width, d.height, color, color);
             }

@@ -1,9 +1,7 @@
 package kdp.hudlibrary.tehud;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -16,12 +14,8 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.ByteNBT;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.DoubleNBT;
-import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.ShortNBT;
 import net.minecraft.potion.Effect;
 import net.minecraft.tileentity.AbstractFurnaceTileEntity;
 import net.minecraft.tileentity.BarrelTileEntity;
@@ -52,8 +46,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import kdp.hudlibrary.HUDConfig;
@@ -115,20 +107,18 @@ public class VanillaImpl {
                         .getObject()) {
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
-                        ItemStack input = ItemStack.read((CompoundNBT) data.get(0));
-                        ItemStack output = ItemStack.read((CompoundNBT) data.get(1));
-                        ItemStack fuel = ItemStack.read((CompoundNBT) data.get(3));
-                        double fill = ((DoubleNBT) data.get(2)).getDouble();
+                        ItemStack input = ItemStack.read(data.getCompound("input"));
+                        ItemStack output = ItemStack.read(data.getCompound("output"));
+                        ItemStack fuel = ItemStack.read(data.getCompound("fuel"));
+                        double fill = data.getDouble("fill");
                         if (!input.isEmpty()) {
                             lis.add(new HUDItemStack(input));
                         }
                         List<HUDElement> list = new ArrayList<>();
                         if (fill > 0) {
-                            list.add(new HUDProgressBar(80, 12, 0xEE444444, 0x77777777).setFilling(fill));
-                            list.hashCode();
+                            list.add(new HUDProgressBar(-1, 10, 0xEE444444, 0x77777777).setFilling(fill));
                         }
                         if (!output.isEmpty()) {
                             list.add(new HUDItemStack(output));
@@ -143,15 +133,14 @@ public class VanillaImpl {
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
-                        Int2ObjectMap<INBT> map = new Int2ObjectOpenHashMap<>();
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+                        CompoundNBT nbt = new CompoundNBT();
+                        nbt.put("input", tile.getStackInSlot(0).write(new CompoundNBT()));
+                        nbt.put("fuel", tile.getStackInSlot(1).write(new CompoundNBT()));
+                        nbt.put("output", tile.getStackInSlot(2).write(new CompoundNBT()));
                         CompoundNBT written = tile.write(new CompoundNBT());
-                        map.put(0, tile.getStackInSlot(0).write(new CompoundNBT()));
-                        map.put(1, tile.getStackInSlot(2).write(new CompoundNBT()));
-                        map.put(2,
-                                new DoubleNBT(written.getInt("CookTime") / (double) written.getInt("CookTimeTotal")));
-                        map.put(3, tile.getStackInSlot(1).write(new CompoundNBT()));
-                        return map;
+                        nbt.putDouble("fill", written.getInt("CookTime") / (double) written.getInt("CookTimeTotal"));
+                        return nbt;
                     }
 
                 };
@@ -167,25 +156,24 @@ public class VanillaImpl {
                 IHUDProvider pro = new VanillaHUDProvider<CampfireTileEntity>((CampfireTileEntity) event.getObject()) {
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
                         for (int i = 0; i < 4; i++) {
-                            CompoundNBT nbt = (CompoundNBT) data.get(i);
-                            if (nbt == null) {
+                            CompoundNBT nbt = data.getCompound(i + "");
+                            if (nbt.isEmpty()) {
                                 continue;
                             }
                             lis.add(new HUDCompound(false,
-                                    new HUDItemStack().read(nbt.getCompound("item")),
-                                    new HUDProgressBar(-1, 8, 0xEE444444, 0xFFE79E00)
-                                            .read((DoubleNBT) nbt.get("fill"))));
+                                    new HUDItemStack(ItemStack.read(nbt.getCompound("item"))),
+                                    new HUDProgressBar(-1, 8, 0xEE444444, 0x77777777)
+                                            .setFilling(nbt.getDouble("fill"))));
                         }
                         return lis;
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
-                        Int2ObjectOpenHashMap<INBT> map = new Int2ObjectOpenHashMap<>();
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+                        CompoundNBT nbt = new CompoundNBT();
                         CompoundNBT written = tile.write(new CompoundNBT());
                         int[] cookingTimes = written.getIntArray("CookingTimes");
                         int[] cookingTotalTimes = written.getIntArray("CookingTotalTimes");
@@ -194,13 +182,13 @@ public class VanillaImpl {
                         for (int i = 0; i < items.size(); i++) {
                             ItemStack s = items.get(i);
                             if (!s.isEmpty()) {
-                                CompoundNBT nbt = new CompoundNBT();
-                                nbt.put("item", s.write(new CompoundNBT()));
-                                nbt.putDouble("fill", cookingTimes[i] / (double) cookingTotalTimes[i]);
-                                map.put(i, nbt);
+                                CompoundNBT n = new CompoundNBT();
+                                n.put("item", s.write(new CompoundNBT()));
+                                n.putDouble("fill", cookingTimes[i] / (double) cookingTotalTimes[i]);
+                                nbt.put(i + "", n);
                             }
                         }
-                        return map;
+                        return nbt;
                     }
 
                     @Override
@@ -220,11 +208,10 @@ public class VanillaImpl {
                 IHUDProvider pro = new VanillaHUDProvider<BeaconTileEntity>((BeaconTileEntity) event.getObject()) {
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
                         int fontColor = HUDConfig.config(tile).getFontColor();
-                        CompoundNBT nbt = (CompoundNBT) data.get(0);
+                        CompoundNBT nbt = data;
                         int level = nbt.getInt("l");
                         int primaryID = nbt.getInt("p");
                         int secondaryID = nbt.getInt("s");
@@ -244,16 +231,16 @@ public class VanillaImpl {
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+                        CompoundNBT nbt = new CompoundNBT();
                         CompoundNBT written = tile.write(new CompoundNBT());
                         int level = tile.getLevels();
                         int primaryID = written.getInt("Primary");
                         int secondaryID = written.getInt("Secondary");
-                        CompoundNBT nbt = new CompoundNBT();
                         nbt.putInt("l", level);
                         nbt.putInt("p", primaryID);
                         nbt.putInt("s", secondaryID);
-                        return Collections.singletonMap(0, nbt);
+                        return nbt;
                     }
                 };
 
@@ -269,18 +256,17 @@ public class VanillaImpl {
                         .getObject()) {
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
-                        ListNBT list = (ListNBT) data.get(0);
+                        ListNBT list = data.getList("items", 10);
                         List<ItemStack> items = list.stream().map(n -> ItemStack.read((CompoundNBT) n))
                                 .collect(Collectors.toList());
                         if (!items.get(3).isEmpty()) {
                             lis.add(new HUDItemStack(items.get(3)).setAlignment(TextTable.Alignment.CENTER));
                         }
-                        short brewTime = ((ShortNBT) data.get(1)).getShort();
+                        short brewTime = data.getShort("brew");
                         if (brewTime > 0) {
-                            lis.add(new HUDProgressBar(-1, 12, 0xEE444444, 0x77777777).setFilling(1 - brewTime / 400.));
+                            lis.add(new HUDProgressBar(-1, 10, 0xEE444444, 0x77777777).setFilling(1 - brewTime / 400.));
                         }
                         if (!items.get(0).isEmpty() || !items.get(1).isEmpty() || !items.get(2).isEmpty()) {
                             lis.add(new HUDCompound(false,
@@ -292,7 +278,7 @@ public class VanillaImpl {
                         if (!items.get(4).isEmpty()) {
                             fuelList.add(new HUDItemStack(items.get(4)));
                         }
-                        byte fuel = ((ByteNBT) data.get(2)).getByte();
+                        byte fuel = data.getByte("fuel");
                         if (fuel > 0) {
                             fuelList.add(new HUDProgressBar(-1, 8, 0xEE444444, 0xFFE79E00).setFilling(fuel / 20.));
                         }
@@ -303,8 +289,8 @@ public class VanillaImpl {
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
-                        Int2ObjectOpenHashMap<INBT> map = new Int2ObjectOpenHashMap<>();
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+                        CompoundNBT nbt = new CompoundNBT();
                         CompoundNBT written = tile.write(new CompoundNBT());
                         short brewTime = written.getShort("BrewTime");
                         byte fuel = written.getByte("Fuel");
@@ -312,10 +298,10 @@ public class VanillaImpl {
                         ItemStackHelper.loadAllItems(written, items);
                         ListNBT lis = new ListNBT();
                         items.forEach(s -> lis.add(s.write(new CompoundNBT())));
-                        map.put(0, lis);
-                        map.put(1, new ShortNBT(brewTime));
-                        map.put(2, new ByteNBT(fuel));
-                        return map;
+                        nbt.put("items", lis);
+                        nbt.putShort("brew", brewTime);
+                        nbt.putByte("fuel", fuel);
+                        return nbt;
                     }
                 };
 
@@ -333,11 +319,10 @@ public class VanillaImpl {
                         .getObject()) {
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
-                        ListNBT list = (ListNBT) data.get(0);
-                        if (list != null) {
+                        ListNBT list = data.getList("items", 10);
+                        if (!list.isEmpty()) {
                             lis.add(new HUDCompound(true,
                                     list.stream().map(n -> new HUDItemStack(ItemStack.read((CompoundNBT) n)))
                                             .collect(Collectors.toList())));
@@ -346,18 +331,18 @@ public class VanillaImpl {
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
-                        Int2ObjectOpenHashMap<INBT> map = new Int2ObjectOpenHashMap<>();
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+                        CompoundNBT nbt = new CompoundNBT();
                         if (!tile.isEmpty()) {
                             ItemStackHandler handler = new ItemStackHandler(tile.getSizeInventory());
                             IntStream.range(0, tile.getSizeInventory()).forEach(i -> ItemHandlerHelper
                                     .insertItemStacked(handler, tile.getStackInSlot(i).copy(), false));
-                            map.put(0,
+                            nbt.put("items",
                                     IntStream.range(0, handler.getSlots()).mapToObj(handler::getStackInSlot)
                                             .filter(s -> !s.isEmpty()).map(s -> s.write(new CompoundNBT()))
                                             .collect(Collectors.toCollection(ListNBT::new)));
                         }
-                        return map;
+                        return nbt;
                     }
                 };
 

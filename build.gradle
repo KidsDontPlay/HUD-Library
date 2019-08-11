@@ -57,9 +57,12 @@ minecraft {
         }
     }
 }
-
+repositories {
+    maven {url "http://tehnut.info/maven"}
+}
 
 dependencies {
+    //compile "mcp.mobius.waila:Hwyla:1.10.5-B66_1.14.4"
     minecraft "net.minecraftforge:forge:${props.get('mc_version')}-${props.get('forge_version')}"
 }
 

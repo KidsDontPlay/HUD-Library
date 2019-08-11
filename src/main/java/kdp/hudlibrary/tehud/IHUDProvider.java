@@ -1,13 +1,11 @@
 package kdp.hudlibrary.tehud;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraftforge.fml.LogicalSide;
 
@@ -52,7 +50,7 @@ public interface IHUDProvider {
      * @param data is null if {@link #readingSide()} returns {@link LogicalSide#CLIENT}
      * @return
      */
-    List<HUDElement> getElements(PlayerEntity player, Direction facing, @Nullable Map<Integer, INBT> data);
+    List<HUDElement> getElements(PlayerEntity player, Direction facing, @Nullable CompoundNBT data);
 
     //</client>
 
@@ -61,8 +59,11 @@ public interface IHUDProvider {
     }
 
     @Nonnull
-    default Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
-        return Collections.emptyMap();
+    default CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
+        if (readingSide().isServer()) {
+            throw new UnsupportedOperationException();
+        }
+        return null;
     }
 
     /**

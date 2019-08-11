@@ -13,7 +13,6 @@ import java.util.Objects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.INBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -23,13 +22,12 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class HUDSyncMessage {
 
     private static final String SIZE = "S", POS = "P", FACE = "F", TAG = "T";
 
-    private Map<DirectionPos, Map<Integer, INBT>> map = new HashMap<>();
+    private Map<DirectionPos, CompoundNBT> map = new HashMap<>();
 
     public HUDSyncMessage() {
     }
@@ -56,7 +54,7 @@ public class HUDSyncMessage {
     }
 
     public void onMessage(HUDSyncMessage message, NetworkEvent.Context ctx) {
-        Map<DirectionPos, Map<Integer, INBT>> map = message.map;
+        Map<DirectionPos, CompoundNBT> map = message.map;
         ctx.enqueueWork(() -> HUDRenderer.hudElements.putAll(map));
     }
 
@@ -73,27 +71,19 @@ public class HUDSyncMessage {
         for (int i = 0; i < size; i++) {
             DirectionPos dp = DirectionPos
                     .of(BlockPos.fromLong(nbt.getLong(i + POS)), Direction.byIndex(nbt.getInt(i + FACE)));
-            Int2ObjectOpenHashMap nbts = new Int2ObjectOpenHashMap();
-            CompoundNBT mapNBT = nbt.getCompound(i + TAG);
-            mapNBT.keySet().forEach(s -> nbts.put(Integer.parseInt(s), mapNBT.get(s)));
-            map.put(dp, nbts);
+            map.put(dp, nbt.getCompound(i + TAG));
         }
     }
 
     public void encode(ByteBuf buf) {
         CompoundNBT nbt = new CompoundNBT();
         nbt.putInt(SIZE, map.size());
-        List<Entry<DirectionPos, Map<Integer, INBT>>> l = new ArrayList<>(map.entrySet());
+        List<Entry<DirectionPos, CompoundNBT>> l = new ArrayList<>(map.entrySet());
         for (int i = 0; i < map.size(); i++) {
-            Entry<DirectionPos, Map<Integer, INBT>> e = l.get(i);
+            Entry<DirectionPos, CompoundNBT> e = l.get(i);
             nbt.putLong(i + POS, e.getKey().pos.toLong());
             nbt.putInt(i + FACE, e.getKey().face.ordinal());
-            CompoundNBT mapNBT = new CompoundNBT();
-            Map<Integer, INBT> nbts = e.getValue();
-            for (Entry<Integer, INBT> ee : nbts.entrySet()) {
-                mapNBT.put("" + ee.getKey(), ee.getValue());
-            }
-            nbt.put(i + TAG, mapNBT);
+            nbt.put(i + TAG, e.getValue());
         }
         ByteBufOutputStream bbos = new ByteBufOutputStream(buf);
         try {

@@ -2,12 +2,11 @@ package kdp.hudlibrary.tehud.element;
 
 import java.awt.*;
 
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraftforge.fluids.FluidStack;
 
 import kdp.hudlibrary.ClientHelper;
 
-public class HUDFluidStack extends HUDElement<CompoundNBT> {
+public class HUDFluidStack extends HUDElement {
 
     private FluidStack stack;
     private final int width, height;
@@ -26,21 +25,17 @@ public class HUDFluidStack extends HUDElement<CompoundNBT> {
 
     @Override
     protected Dimension dimension(int maxWidth) {
+        if (maxWidth >= 0 && width > maxWidth) {
+            return new Dimension();
+        }
         return new Dimension(width < 0 ? maxWidth : width, height);
     }
 
     @Override
-    public HUDElement read(CompoundNBT tag) {
-        if (reader != null) {
-            reader.accept(this, tag);
-            return this;
-        }
-        stack = FluidStack.loadFluidStackFromNBT(tag);
-        return this;
-    }
-
-    @Override
     public void draw(int maxWidth) {
+        if (maxWidth >= 0 && width > maxWidth) {
+            return;
+        }
         ClientHelper.drawFluidStack(stack, 0, 0, width < 0 ? maxWidth : width, height);
     }
 

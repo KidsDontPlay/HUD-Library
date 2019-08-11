@@ -1,15 +1,12 @@
 package kdp.hudlibrary;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.SkullTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -27,14 +24,11 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
-import org.apache.commons.lang3.RandomStringUtils;
-
 import kdp.hudlibrary.tehud.HUDCapability;
 import kdp.hudlibrary.tehud.HUDSyncMessage;
 import kdp.hudlibrary.tehud.IHUDProvider;
-import kdp.hudlibrary.tehud.element.HUDCompound;
 import kdp.hudlibrary.tehud.element.HUDElement;
-import kdp.hudlibrary.tehud.element.HUDText;
+import kdp.hudlibrary.tehud.element.HUDTexture;
 
 @Mod(HUDLibrary.MOD_ID)
 public class HUDLibrary {
@@ -123,14 +117,15 @@ public class HUDLibrary {
                     }
 
                     @Override
-                    public List<HUDElement> getElements(PlayerEntity player, Direction facing,
-                            Map<Integer, INBT> data) {
+                    public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         boolean breac = true;
-                        return Collections.singletonList(new HUDCompound(breac, IntStream.range(0, 5).mapToObj(i -> {
+                        /*return Collections.singletonList(new HUDCompound(breac, IntStream.range(0, 5).mapToObj(i -> {
                             return new HUDText(IntStream.range(0, 4)
                                     .mapToObj(ii -> RandomStringUtils.randomAlphabetic(4, 9))
                                     .collect(Collectors.joining(" ")), breac).setColor(0x6959CD);
-                        }).collect(Collectors.toList())));
+                        }).collect(Collectors.toList())));*/
+                        return Arrays
+                                .asList(new HUDTexture(new ResourceLocation("textures/gui/icons.png"), 53, 1, 7, 7));
                     }
 
                     @Override
@@ -139,7 +134,7 @@ public class HUDLibrary {
                     }
 
                     @Override
-                    public Map<Integer, INBT> getNBTData(PlayerEntity player, Direction facing) {
+                    public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
                         return IHUDProvider.super.getNBTData(player, facing);
                     }
 
