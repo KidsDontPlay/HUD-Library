@@ -7,23 +7,36 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 
 public class HUDText extends HUDElement {
+    private ITextComponent textComponent;
     private String text;
     private boolean shadow, unicode;
     private final boolean lineBreak;
     private final FontRenderer fr = Minecraft.getInstance().fontRenderer;
     private int color = 0xFFCCCCCC;
 
-    public HUDText(String text, boolean lineBreak) {
+    public HUDText(ITextComponent textComponent, boolean lineBreak) {
         super();
-        this.text = text;
+        this.textComponent = textComponent;
         this.lineBreak = lineBreak;
+        this.text = textComponent.getFormattedText();
+    }
+
+    public HUDText(String text, boolean lineBreak) {
+        this(new StringTextComponent(text), lineBreak);
+    }
+
+    public HUDText setTextComponent(ITextComponent textComponent) {
+        this.textComponent = textComponent;
+        this.text = textComponent.getFormattedText();
+        return this;
     }
 
     public HUDText setText(String text) {
-        this.text = text;
-        return this;
+        return setTextComponent(new StringTextComponent(text));
     }
 
     public HUDText setShadow(boolean shadow) {
