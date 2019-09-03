@@ -45,7 +45,7 @@ import kdp.hudlibrary.tehud.element.HUDElement;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HUDRenderer {
-    protected static final Map<DirectionPos, CompoundNBT> hudElements = new HashMap<>();
+    static final Map<DirectionPos, CompoundNBT> hudElements = new HashMap<>();
     private static Cache<DirectionPos, List<HUDElement>> cachedElements = CacheBuilder.newBuilder().maximumSize(100)
             .expireAfterWrite(250, TimeUnit.MILLISECONDS).build();
     private static Set<TileEntity> tiles = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -64,7 +64,7 @@ public class HUDRenderer {
 
     @SubscribeEvent
     public static void tick(TickEvent.PlayerTickEvent event) {
-        if (event.side.isClient() && event.phase == TickEvent.Phase.END && event.player.ticksExisted % 30 == 0) {
+        if (event.side.isClient() && event.phase == TickEvent.Phase.END && event.player.ticksExisted % 20 == 0) {
             tiles = event.player.world.loadedTileEntityList.stream()
                     .filter(t -> capaMap.getUnchecked(t).isPresent() && !t.isRemoved())
                     .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
@@ -129,7 +129,7 @@ public class HUDRenderer {
             GlStateManager.translated(x + .5, y + 1, z + .5);
 
             // rotate to the player
-            double f1 = 0;
+            double f1;
             if (hud.smoothRotation(player)) {
                 f1 = (180 * (Math.atan2(v.x, v.z) + Math.PI)) / Math.PI;
             } else {

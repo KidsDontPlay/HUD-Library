@@ -66,10 +66,10 @@ public class VanillaImpl {
             .put("barrel", BarrelTileEntity.class).put("dispenser", DispenserTileEntity.class)
             .put("chest", ChestTileEntity.class).put("hopper", HopperTileEntity.class).build();
 
-    public static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultFocus = new Object2BooleanOpenHashMap<>();
-    public static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultSneak = new Object2BooleanOpenHashMap<>();
-    public static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultBack = new Object2ObjectOpenHashMap<>();
-    public static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultFont = new Object2ObjectOpenHashMap<>();
+    static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultFocus = new Object2BooleanOpenHashMap<>();
+    static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultSneak = new Object2BooleanOpenHashMap<>();
+    static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultBack = new Object2ObjectOpenHashMap<>();
+    static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultFont = new Object2ObjectOpenHashMap<>();
 
     static {
         defaultFocus.defaultReturnValue(false);
@@ -210,10 +210,9 @@ public class VanillaImpl {
                     public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
                         List<HUDElement> lis = new ArrayList<>();
                         int fontColor = HUDConfig.config(tile).getFontColor();
-                        CompoundNBT nbt = data;
-                        int level = nbt.getInt("l");
-                        int primaryID = nbt.getInt("p");
-                        int secondaryID = nbt.getInt("s");
+                        int level = data.getInt("l");
+                        int primaryID = data.getInt("p");
+                        int secondaryID = data.getInt("s");
                         lis.add(new HUDText("Level: " + level, false).setColor(fontColor)
                                 .setAlignment(TextTable.Alignment.CENTER));
                         Effect p = Effect.get(primaryID);
@@ -356,9 +355,9 @@ public class VanillaImpl {
 
     private abstract static class VanillaHUDProvider<T extends TileEntity> implements IHUDProvider {
 
-        protected T tile;
+        T tile;
 
-        public VanillaHUDProvider(T tile) {
+        VanillaHUDProvider(T tile) {
             this.tile = tile;
         }
 
@@ -379,8 +378,8 @@ public class VanillaImpl {
                 return true;
             }
             RayTraceResult rtr = Minecraft.getInstance().objectMouseOver;
-            if (rtr instanceof BlockRayTraceResult && ((BlockRayTraceResult) rtr).getPos() != null)
-                return ((BlockRayTraceResult) rtr).getPos().equals(tile.getPos());
+            if (rtr instanceof BlockRayTraceResult)
+                return tile.getPos().equals(((BlockRayTraceResult) rtr).getPos());
             return false;
         }
 

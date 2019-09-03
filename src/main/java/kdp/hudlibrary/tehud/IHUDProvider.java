@@ -84,7 +84,7 @@ public interface IHUDProvider {
      *
      * Called on client.
      *
-     * @return true if
+     * @return true if HUD is directed to the player
      */
     default boolean smoothRotation(PlayerEntity player) {
         return false;
@@ -147,7 +147,7 @@ public interface IHUDProvider {
         /** left - right */
         HORIZONTAL,
         /** front - back */
-        NORMAL;
+        NORMAL
     }
 
     enum MarginDirection {

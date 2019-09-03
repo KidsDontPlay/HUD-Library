@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.fluid.Fluids;
 import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
@@ -15,13 +16,10 @@ import org.lwjgl.opengl.GL11;
 public class ClientHelper {
 
     public static void drawFluidStack(FluidStack stack, int x, int y, int w, int h) {
-        if (true)
-            throw new UnsupportedOperationException();
-        if (stack == null || stack.getFluid() == null)
+        if (stack.isEmpty())
             return;
         Minecraft mc = Minecraft.getInstance();
-        //mc.getTextureMap().getSprite(null);
-        TextureAtlasSprite icon = mc.getTextureMap().getSprite(stack.getFluid().getStill());
+        TextureAtlasSprite icon = mc.getTextureMap().getSprite(stack.getFluid().getAttributes().getStillTexture());
         if (icon == null) {
             return;
         }
@@ -29,7 +27,10 @@ public class ClientHelper {
         int posY = y + h - renderAmount;
 
         mc.getTextureManager().bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
-        int color = stack.getFluid().getColor(stack);
+        int color = stack.getFluid().getAttributes().getColor(stack);
+        if (stack.getFluid() == Fluids.WATER || stack.getFluid() == Fluids.FLOWING_WATER) {
+            color = 0x3F76E4;
+        }
         GL11.glColor3ub((byte) (color >> 16 & 0xFF), (byte) (color >> 8 & 0xFF), (byte) (color & 0xFF));
 
         GlStateManager.enableBlend();
@@ -49,11 +50,11 @@ public class ClientHelper {
                 Tessellator tessellator = Tessellator.getInstance();
                 BufferBuilder tes = tessellator.getBuffer();
                 tes.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-                tes.pos(drawX, drawY + drawHeight, 0).tex(minU, minV + (maxV - minV) * drawHeight / 16F).endVertex();
-                tes.pos(drawX + drawWidth, drawY + drawHeight, 0)
-                        .tex(minU + (maxU - minU) * drawWidth / 16F, minV + (maxV - minV) * drawHeight / 16F)
-                        .endVertex();
-                tes.pos(drawX + drawWidth, drawY, 0).tex(minU + (maxU - minU) * drawWidth / 16F, minV).endVertex();
+                double v = minV + (maxV - minV) * drawHeight / 16F;
+                double u = minU + (maxU - minU) * drawWidth / 16F;
+                tes.pos(drawX, drawY + drawHeight, 0).tex(minU, v).endVertex();
+                tes.pos(drawX + drawWidth, drawY + drawHeight, 0).tex(u, v).endVertex();
+                tes.pos(drawX + drawWidth, drawY, 0).tex(u, minV).endVertex();
                 tes.pos(drawX, drawY, 0).tex(minU, minV).endVertex();
                 tessellator.draw();
             }

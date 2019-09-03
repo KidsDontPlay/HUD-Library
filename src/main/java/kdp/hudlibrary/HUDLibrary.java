@@ -6,16 +6,20 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.SkullTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -27,6 +31,8 @@ import kdp.hudlibrary.tehud.HUDCapability;
 import kdp.hudlibrary.tehud.HUDSyncMessage;
 import kdp.hudlibrary.tehud.IHUDProvider;
 import kdp.hudlibrary.tehud.element.HUDElement;
+import kdp.hudlibrary.tehud.element.HUDFluidStack;
+import kdp.hudlibrary.tehud.element.HUDText;
 import kdp.hudlibrary.tehud.element.HUDTexture;
 
 @Mod(HUDLibrary.MOD_ID)
@@ -34,7 +40,7 @@ public class HUDLibrary {
     public static final String MOD_ID = "hudlibrary";
 
     private static final String VERSION = "1.0";
-    public static SimpleChannel channel = NetworkRegistry
+    private static SimpleChannel channel = NetworkRegistry
             .newSimpleChannel(new ResourceLocation(MOD_ID, "ch1"), () -> VERSION, VERSION::equals, VERSION::equals);
 
     public HUDLibrary() {
@@ -43,13 +49,11 @@ public class HUDLibrary {
         HUDConfig.init();
         MinecraftForge.EVENT_BUS.addListener(this::attach);
         int index = 0;
-        channel.registerMessage(index++, HUDSyncMessage.class, (m, b) -> m.encode(b), b -> {
+        channel.registerMessage(index++, HUDSyncMessage.class, HUDSyncMessage::encode, b -> {
             HUDSyncMessage m = new HUDSyncMessage();
             m.decode(b);
             return m;
-        }, (m, s) -> {
-            m.onMessage(m, s.get());
-        });
+        }, (m, s) -> m.onMessage(m, s.get()));
     }
 
     private void setup(final FMLCommonSetupEvent event) {
@@ -117,15 +121,12 @@ public class HUDLibrary {
 
                     @Override
                     public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
-                        boolean breac = true;
-                        /*return Collections.singletonList(new HUDCompound(breac, IntStream.range(0, 5).mapToObj(i -> {
-                            return new HUDText(IntStream.range(0, 4)
-                                    .mapToObj(ii -> RandomStringUtils.randomAlphabetic(4, 9))
-                                    .collect(Collectors.joining(" ")), breac).setColor(0x6959CD);
-                        }).collect(Collectors.toList())));*/
                         List<HUDElement> list = new ArrayList<>();
                         list.add(new HUDTexture(new ResourceLocation("textures/gui/icons.png"), 53, 1, 7, 7));
-                        //list.add(new HUDFluidStack(new FluidStack(),30,100));
+                        list.add(new HUDText(new StringTextComponent("AlPha djn")
+                                .setStyle(new Style().setBold(true).setStrikethrough(true)), false));
+                        list.add(new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 20, 60));
+                        list.add(new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 20, 60));
                         return list;
                     }
 
