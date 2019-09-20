@@ -25,7 +25,8 @@ import kdp.hudlibrary.ClientHelper;
 public class WorldGui {
 
     private static final ResourceLocation BACKGROUND_TEX = new ResourceLocation("textures/gui/demo_background.png");
-    private static final ResourceLocation SLOT_TEX = new ResourceLocation("textures/gui/container/recipe_background.png");
+    private static final ResourceLocation SLOT_TEX = new ResourceLocation(
+            "textures/gui/container/recipe_background.png");
 
     public int width = 250, height = 150, id;
     public final Vec3d guiPos, playerPos, front, back;
@@ -78,12 +79,7 @@ public class WorldGui {
                 drawItemStack(slot.getStack(), slot.xPos, slot.yPos, true);
                 if (isMouseOverSlot(slot, mouseX, mouseY)) {
                     GlStateManager.colorMask(true, true, true, false);
-                    GuiUtils.drawGradientRect(0,
-                            slot.xPos,
-                            slot.yPos,
-                            slot.xPos + 16,
-                            slot.yPos + 16,
-                            -2130706433,
+                    GuiUtils.drawGradientRect(0, slot.xPos, slot.yPos, slot.xPos + 16, slot.yPos + 16, -2130706433,
                             -2130706433);
                     GlStateManager.colorMask(true, true, true, true);
                 }
@@ -203,13 +199,8 @@ public class WorldGui {
 
     protected void drawTooltip(List<String> lines, int mouseX, int mouseY) {
         pre();
-        GuiUtils.drawHoveringText(lines,
-                MathHelper.clamp(mouseX, 0, width),
-                MathHelper.clamp(mouseY, 0, height),
-                width,
-                height,
-                -1,
-                mc.fontRenderer);
+        GuiUtils.drawHoveringText(lines, MathHelper.clamp(mouseX, 0, width), MathHelper.clamp(mouseY, 0, height), width,
+                height, -1, mc.fontRenderer);
         post();
     }
 

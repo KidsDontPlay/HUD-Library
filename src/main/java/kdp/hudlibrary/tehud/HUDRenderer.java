@@ -167,8 +167,7 @@ public class HUDRenderer {
 
             // translate margin
             GlStateManager.translated(hud.getMargin(IHUDProvider.MarginDirection.LEFT),
-                    hud.getMargin(IHUDProvider.MarginDirection.TOP),
-                    0);
+                    hud.getMargin(IHUDProvider.MarginDirection.TOP), 0);
             //				GlStateManager.translate(0, 0, .003);
             render(elements, effectiveWidth);
 

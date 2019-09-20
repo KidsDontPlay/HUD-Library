@@ -61,10 +61,9 @@ public class HUDItemStack extends HUDElement {
             //GlStateManager.disableDepthTest();
             GlStateManager.disableBlend();
             GlStateManager.translated(0, 0, scaleFactor + 1.);
-            Minecraft.getInstance().fontRenderer.drawStringWithShadow(s,
-                    (float) (19 - 2 - Minecraft.getInstance().fontRenderer.getStringWidth(s)),
-                    (float) (6 + 3),
-                    16777215);
+            Minecraft.getInstance().fontRenderer
+                    .drawStringWithShadow(s, (float) (19 - 2 - Minecraft.getInstance().fontRenderer.getStringWidth(s)),
+                            (float) (6 + 3), 16777215);
             GlStateManager.translated(0, 0, -(scaleFactor + 1));
             GlStateManager.enableBlend();
             GlStateManager.enableLighting();

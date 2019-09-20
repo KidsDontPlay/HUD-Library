@@ -42,9 +42,8 @@ public class HUDSyncMessage {
                         if (f.getAxis() == Direction.Axis.Y) {
                             continue;
                         }
-                        map.put(DirectionPos.of(t.getPos(), f),
-                                Objects.requireNonNull(hud.getNBTData(player, f),
-                                        "IHUDProvider#getNBTData must not return null."));
+                        map.put(DirectionPos.of(t.getPos(), f), Objects.requireNonNull(hud.getNBTData(player, f),
+                                "IHUDProvider#getNBTData must not return null."));
                     }
                 }
             }

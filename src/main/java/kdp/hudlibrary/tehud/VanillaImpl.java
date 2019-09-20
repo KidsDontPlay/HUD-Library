@@ -66,10 +66,10 @@ public class VanillaImpl {
             .put("barrel", BarrelTileEntity.class).put("dispenser", DispenserTileEntity.class)
             .put("chest", ChestTileEntity.class).put("hopper", HopperTileEntity.class).build();
 
-    static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultFocus = new Object2BooleanOpenHashMap<>();
-    static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultSneak = new Object2BooleanOpenHashMap<>();
-    static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultBack = new Object2ObjectOpenHashMap<>();
-    static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultFont = new Object2ObjectOpenHashMap<>();
+    public static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultFocus = new Object2BooleanOpenHashMap<>();
+    public static final Object2BooleanOpenHashMap<Class<? extends TileEntity>> defaultSneak = new Object2BooleanOpenHashMap<>();
+    public static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultBack = new Object2ObjectOpenHashMap<>();
+    public static final Object2ObjectOpenHashMap<Class<? extends TileEntity>, String> defaultFont = new Object2ObjectOpenHashMap<>();
 
     static {
         defaultFocus.defaultReturnValue(false);
@@ -102,8 +102,8 @@ public class VanillaImpl {
         final ResourceLocation resourceLocation = new ResourceLocation(MOD_ID, "vanilla_hud");
         if (event.getObject() instanceof AbstractFurnaceTileEntity) {
             event.addCapability(resourceLocation, new ICapabilityProvider() {
-                IHUDProvider pro = new VanillaHUDProvider<AbstractFurnaceTileEntity>((AbstractFurnaceTileEntity) event
-                        .getObject()) {
+                IHUDProvider pro = new VanillaHUDProvider<AbstractFurnaceTileEntity>(
+                        (AbstractFurnaceTileEntity) event.getObject()) {
 
                     @Override
                     public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
@@ -162,8 +162,7 @@ public class VanillaImpl {
                             if (nbt.isEmpty()) {
                                 continue;
                             }
-                            lis.add(new HUDCompound(false,
-                                    new HUDItemStack(ItemStack.read(nbt.getCompound("item"))),
+                            lis.add(new HUDCompound(false, new HUDItemStack(ItemStack.read(nbt.getCompound("item"))),
                                     new HUDProgressBar(-1, 8, 0xEE444444, 0x77777777)
                                             .setFilling(nbt.getDouble("fill"))));
                         }
@@ -250,8 +249,8 @@ public class VanillaImpl {
             });
         } else if (event.getObject() instanceof BrewingStandTileEntity) {
             event.addCapability(resourceLocation, new ICapabilityProvider() {
-                IHUDProvider pro = new VanillaHUDProvider<BrewingStandTileEntity>((BrewingStandTileEntity) event
-                        .getObject()) {
+                IHUDProvider pro = new VanillaHUDProvider<BrewingStandTileEntity>(
+                        (BrewingStandTileEntity) event.getObject()) {
 
                     @Override
                     public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
@@ -267,10 +266,9 @@ public class VanillaImpl {
                             lis.add(new HUDProgressBar(-1, 10, 0xEE444444, 0x77777777).setFilling(1 - brewTime / 400.));
                         }
                         if (!items.get(0).isEmpty() || !items.get(1).isEmpty() || !items.get(2).isEmpty()) {
-                            lis.add(new HUDCompound(false,
-                                    new HUDItemStack(items.get(0)),
-                                    new HUDItemStack(items.get(1)),
-                                    new HUDItemStack(items.get(2))).setAlignment(TextTable.Alignment.CENTER));
+                            lis.add(new HUDCompound(false, new HUDItemStack(items.get(0)),
+                                    new HUDItemStack(items.get(1)), new HUDItemStack(items.get(2)))
+                                    .setAlignment(TextTable.Alignment.CENTER));
                         }
                         List<HUDElement> fuelList = new ArrayList<>();
                         if (!items.get(4).isEmpty()) {
@@ -313,8 +311,8 @@ public class VanillaImpl {
                 .getObject() instanceof DispenserTileEntity || event.getObject() instanceof ChestTileEntity || event
                 .getObject() instanceof HopperTileEntity) {
             event.addCapability(resourceLocation, new ICapabilityProvider() {
-                IHUDProvider pro = new VanillaHUDProvider<LockableLootTileEntity>((LockableLootTileEntity) event
-                        .getObject()) {
+                IHUDProvider pro = new VanillaHUDProvider<LockableLootTileEntity>(
+                        (LockableLootTileEntity) event.getObject()) {
 
                     @Override
                     public List<HUDElement> getElements(PlayerEntity player, Direction facing, CompoundNBT data) {
@@ -335,10 +333,9 @@ public class VanillaImpl {
                             ItemStackHandler handler = new ItemStackHandler(tile.getSizeInventory());
                             IntStream.range(0, tile.getSizeInventory()).forEach(i -> ItemHandlerHelper
                                     .insertItemStacked(handler, tile.getStackInSlot(i).copy(), false));
-                            nbt.put("items",
-                                    IntStream.range(0, handler.getSlots()).mapToObj(handler::getStackInSlot)
-                                            .filter(s -> !s.isEmpty()).map(s -> s.write(new CompoundNBT()))
-                                            .collect(Collectors.toCollection(ListNBT::new)));
+                            nbt.put("items", IntStream.range(0, handler.getSlots()).mapToObj(handler::getStackInSlot)
+                                    .filter(s -> !s.isEmpty()).map(s -> s.write(new CompoundNBT()))
+                                    .collect(Collectors.toCollection(ListNBT::new)));
                         }
                         return nbt;
                     }

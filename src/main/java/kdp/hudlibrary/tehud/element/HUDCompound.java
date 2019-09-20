@@ -64,17 +64,17 @@ public class HUDCompound extends HUDElement {
         if (lineBreak) {
             int totalWidth = 0, totalHeight = 0;
             for (List<HUDElement> l : getElementRows(maxWidth)) {
-                totalWidth = Math.max(totalWidth,
-                        l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).width + e
-                                .getMarginHorizontal()).sum());
-                totalHeight += l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e
-                        .getMarginVertical()).max().getAsInt();
+                totalWidth = Math.max(totalWidth, l.stream().mapToInt(
+                        e -> e.getDimension(maxWidth - e.getMarginHorizontal()).width + e.getMarginHorizontal()).sum());
+                totalHeight += l.stream().mapToInt(
+                        e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
+                        .getAsInt();
             }
             d = new Dimension(totalWidth, totalHeight);
         } else {
             int totalWidth = 0, totalHeight = 0;
-            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(maxWidth - Arrays.stream(elements)
-                    .mapToInt(HUDElement::getMarginHorizontal).sum());
+            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(
+                    maxWidth - Arrays.stream(elements).mapToInt(HUDElement::getMarginHorizontal).sum());
             for (HUDElement e : elements) {
                 totalWidth += e.getDimension(maxWidths.getInt(e)).width + e.getMarginHorizontal();
                 totalHeight = Math.max(totalHeight, e.getDimension(maxWidths.getInt(e)).height + e.getMarginVertical());
@@ -103,8 +103,7 @@ public class HUDCompound extends HUDElement {
                     firstH = false;
                     GlStateManager.translated(0,
                             down = l.stream().mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
-                                    .getAsInt(),
-                            0);
+                                    .getAsInt(), 0);
                 }
                 int back = 0;
                 boolean firstW = true;
@@ -126,8 +125,9 @@ public class HUDCompound extends HUDElement {
                     e.draw(maxWidth - e.getMarginHorizontal());
                     GlStateManager.translated(w, 0, 0);
                 }
-                int h = l.stream().mapToInt(e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e
-                        .getMarginVertical()).max().getAsInt();
+                int h = l.stream().mapToInt(
+                        e -> e.getDimension(maxWidth - e.getMarginHorizontal()).height + e.getMarginVertical()).max()
+                        .getAsInt();
                 hei += h;
                 GlStateManager.translated(0, h - down, 0);
                 GlStateManager.translated(-back, 0, 0);
@@ -144,12 +144,11 @@ public class HUDCompound extends HUDElement {
             int down = 0;
             GlStateManager.translated(0,
                     down = Arrays.stream(elements).mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
-                            .getAsInt(),
-                    0);
+                            .getAsInt(), 0);
             int back = 0;
             boolean first = true;
-            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(maxWidth - Arrays.stream(elements)
-                    .mapToInt(HUDElement::getMarginHorizontal).sum());
+            Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(
+                    maxWidth - Arrays.stream(elements).mapToInt(HUDElement::getMarginHorizontal).sum());
             for (HUDElement e : elements) {
                 GlStateManager.depthMask(false);
                 if (first) {

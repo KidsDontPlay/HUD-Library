@@ -73,11 +73,8 @@ public abstract class HUDElement {
     public final Dimension getDimension(int maxWidth) {
         try {
             Dimension d = dimensionCache.get(maxWidth, () -> dimension(maxWidth));
-            Validate.isTrue(d.width <= maxWidth,
-                    "Width of %s is greater than allowed. max: %d, actual: %d",
-                    toString(),
-                    maxWidth,
-                    d.width);
+            Validate.isTrue(d.width <= maxWidth, "Width of %s is greater than allowed. max: %d, actual: %d",
+                    getClass().toString(), maxWidth, d.width);
             return d;
         } catch (ExecutionException e) {
             throw new RuntimeException(e);

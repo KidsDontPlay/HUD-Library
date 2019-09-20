@@ -30,6 +30,7 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 import kdp.hudlibrary.tehud.HUDCapability;
 import kdp.hudlibrary.tehud.HUDSyncMessage;
 import kdp.hudlibrary.tehud.IHUDProvider;
+import kdp.hudlibrary.tehud.element.HUDCompound;
 import kdp.hudlibrary.tehud.element.HUDElement;
 import kdp.hudlibrary.tehud.element.HUDFluidStack;
 import kdp.hudlibrary.tehud.element.HUDText;
@@ -40,7 +41,7 @@ public class HUDLibrary {
     public static final String MOD_ID = "hudlibrary";
 
     private static final String VERSION = "1.0";
-    private static SimpleChannel channel = NetworkRegistry
+    public static SimpleChannel channel = NetworkRegistry
             .newSimpleChannel(new ResourceLocation(MOD_ID, "ch1"), () -> VERSION, VERSION::equals, VERSION::equals);
 
     public HUDLibrary() {
@@ -124,9 +125,13 @@ public class HUDLibrary {
                         List<HUDElement> list = new ArrayList<>();
                         list.add(new HUDTexture(new ResourceLocation("textures/gui/icons.png"), 53, 1, 7, 7));
                         list.add(new HUDText(new StringTextComponent("AlPha djn")
-                                .setStyle(new Style().setBold(true).setStrikethrough(true)), false));
-                        list.add(new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 20, 60));
-                        list.add(new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 20, 60));
+                                .setStyle(new Style().setBold(true).setStrikethrough(true).setObfuscated(true)),
+                                false));
+                        list.add(new HUDCompound(false,
+                                new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 30, 40).setMargin(0),
+                                new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 30, 40).setMargin(0)));
+                        //list.add(new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 20, 60));
+                        //list.add(new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 20, 60));
                         return list;
                     }
 
