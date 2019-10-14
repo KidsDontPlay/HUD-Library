@@ -16,7 +16,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import kdp.hudlibrary.IHUDProvider;
+import kdp.hudlibrary.api.enums.MarginDirection;
 
 public class HUDCompound extends HUDElement {
     protected final HUDElement[] elements;
@@ -102,8 +102,7 @@ public class HUDCompound extends HUDElement {
                 if (firstH) {
                     firstH = false;
                     GlStateManager.translated(0,
-                            down = l.stream().mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
-                                    .getAsInt(), 0);
+                            down = l.stream().mapToInt(e -> e.getMargin(MarginDirection.TOP)).max().getAsInt(), 0);
                 }
                 int back = 0;
                 boolean firstW = true;
@@ -111,7 +110,7 @@ public class HUDCompound extends HUDElement {
                     GlStateManager.depthMask(false);
                     if (firstW) {
                         firstW = false;
-                        int mar = e.getMargin(IHUDProvider.MarginDirection.LEFT);
+                        int mar = e.getMargin(MarginDirection.LEFT);
                         back += mar;
                         GlStateManager.translated(mar, 0, 0);
                     }
@@ -143,8 +142,7 @@ public class HUDCompound extends HUDElement {
             }
             int down = 0;
             GlStateManager.translated(0,
-                    down = Arrays.stream(elements).mapToInt(e -> e.getMargin(IHUDProvider.MarginDirection.TOP)).max()
-                            .getAsInt(), 0);
+                    down = Arrays.stream(elements).mapToInt(e -> e.getMargin(MarginDirection.TOP)).max().getAsInt(), 0);
             int back = 0;
             boolean first = true;
             Reference2IntOpenHashMap<HUDElement> maxWidths = getMaxWidths(
@@ -153,7 +151,7 @@ public class HUDCompound extends HUDElement {
                 GlStateManager.depthMask(false);
                 if (first) {
                     first = false;
-                    int mar = e.getMargin(IHUDProvider.MarginDirection.LEFT);
+                    int mar = e.getMargin(MarginDirection.LEFT);
                     back += mar;
                     GlStateManager.translated(mar, 0, 0);
                 }

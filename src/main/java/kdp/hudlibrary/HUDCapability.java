@@ -7,6 +7,8 @@ import net.minecraftforge.common.capabilities.Capability.IStorage;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 
+import kdp.hudlibrary.api.IHUDProvider;
+
 public class HUDCapability {
 
     @CapabilityInject(IHUDProvider.class)

@@ -1,4 +1,4 @@
-package kdp.hudlibrary;
+package kdp.hudlibrary.api;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -7,6 +7,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 
+import kdp.hudlibrary.api.enums.Axis;
+import kdp.hudlibrary.api.enums.MarginDirection;
 import kdp.hudlibrary.element.HUDElement;
 
 public interface IHUDProvider {
@@ -68,11 +70,11 @@ public interface IHUDProvider {
     }
 
     /**
-     * Returns the margin of the HUD to the elements.
+     * Returns the outer margin of the HUD to the elements.
      *
      * Called on client.
      *
-     * @return the margin
+     * @return the outer margin
      */
     default int getMargin(MarginDirection dir) {
         return 2;
@@ -139,27 +141,6 @@ public interface IHUDProvider {
      */
     default boolean needsSync() {
         return true;
-    }
-
-    enum Axis {
-        /** up - down */
-        VERTICAL,
-        /** left - right */
-        HORIZONTAL,
-        /** front - back */
-        NORMAL
-    }
-
-    enum MarginDirection {
-        TOP, RIGHT, BOTTOM, LEFT;
-
-        public boolean isHorizontal() {
-            return this == LEFT || this == RIGHT;
-        }
-
-        public boolean isVertical() {
-            return this == TOP || this == BOTTOM;
-        }
     }
 
     int defaultBack = 0xBBBBBBDD;

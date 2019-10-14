@@ -39,7 +39,11 @@ import net.minecraftforge.fml.common.Mod;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import kdp.hudlibrary.api.IHUDProvider;
+import kdp.hudlibrary.api.enums.Axis;
+import kdp.hudlibrary.api.enums.MarginDirection;
 import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.util.DirectionPos;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HUDRenderer {
@@ -142,16 +146,16 @@ public class HUDRenderer {
             final int width = hud.getWidth(player, face.getOpposite());
             final int effectiveWidth = width - getMargin(hud, true);
             final int height = elements.stream().mapToInt(e -> e.getDimension(effectiveWidth - //
-                    e.getMargin(IHUDProvider.MarginDirection.LEFT) - //
-                    e.getMargin(IHUDProvider.MarginDirection.RIGHT)).height + //
-                    e.getMargin(IHUDProvider.MarginDirection.TOP) + //
-                    e.getMargin(IHUDProvider.MarginDirection.BOTTOM)).sum() + //
+                    e.getMargin(MarginDirection.LEFT) - //
+                    e.getMargin(MarginDirection.RIGHT)).height + //
+                    e.getMargin(MarginDirection.TOP) + //
+                    e.getMargin(MarginDirection.BOTTOM)).sum() + //
                     getMargin(hud, false);
             double totalScale = MathHelper.clamp(hud.getScale(mc.player, face.getOpposite()), .1, 50.);
             GlStateManager.translated(//
-                    -.5 * totalScale + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.HORIZONTAL),//
-                    1 * totalScale + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.VERTICAL),//
-                    0 + hud.getOffset(player, face.getOpposite(), IHUDProvider.Axis.NORMAL) + .5001);
+                    -.5 * totalScale + hud.getOffset(player, face.getOpposite(), Axis.HORIZONTAL),//
+                    1 * totalScale + hud.getOffset(player, face.getOpposite(), Axis.VERTICAL),//
+                    0 + hud.getOffset(player, face.getOpposite(), Axis.NORMAL) + .5001);
 
             //				GlStateManager.glNormal3f(0.0F, 0.0F, -f);
             GlStateManager.depthMask(false);
@@ -164,8 +168,7 @@ public class HUDRenderer {
             GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
 
             // translate margin
-            GlStateManager.translated(hud.getMargin(IHUDProvider.MarginDirection.LEFT),
-                    hud.getMargin(IHUDProvider.MarginDirection.TOP), 0);
+            GlStateManager.translated(hud.getMargin(MarginDirection.LEFT), hud.getMargin(MarginDirection.TOP), 0);
             //				GlStateManager.translate(0, 0, .003);
             render(elements, effectiveWidth);
 
@@ -179,10 +182,9 @@ public class HUDRenderer {
         for (int j = 0; j < elements.size(); ++j) {
             GlStateManager.depthMask(false);
             HUDElement e = elements.get(j);
-            int marginLeft = e.getMargin(IHUDProvider.MarginDirection.LEFT), marginTop = e
-                    .getMargin(IHUDProvider.MarginDirection.TOP), marginRight = e
-                    .getMargin(IHUDProvider.MarginDirection.RIGHT), marginBottom = e
-                    .getMargin(IHUDProvider.MarginDirection.BOTTOM);
+            int marginLeft = e.getMargin(MarginDirection.LEFT), marginTop = e
+                    .getMargin(MarginDirection.TOP), marginRight = e.getMargin(MarginDirection.RIGHT), marginBottom = e
+                    .getMargin(MarginDirection.BOTTOM);
             Dimension d = e.getDimension(effectiveSize - marginLeft - marginRight);
             int offsetX = marginLeft;
             if (e.getAlignment() == TextTable.Alignment.RIGHT)
@@ -202,7 +204,7 @@ public class HUDRenderer {
 
     private static int getMargin(IHUDProvider hud, boolean horizontal) {
         return horizontal ?
-                hud.getMargin(IHUDProvider.MarginDirection.LEFT) + hud.getMargin(IHUDProvider.MarginDirection.RIGHT) :
-                hud.getMargin(IHUDProvider.MarginDirection.BOTTOM) + hud.getMargin(IHUDProvider.MarginDirection.TOP);
+                hud.getMargin(MarginDirection.LEFT) + hud.getMargin(MarginDirection.RIGHT) :
+                hud.getMargin(MarginDirection.BOTTOM) + hud.getMargin(MarginDirection.TOP);
     }
 }

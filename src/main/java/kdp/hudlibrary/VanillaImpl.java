@@ -47,6 +47,8 @@ import net.minecraftforge.items.ItemStackHandler;
 
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import kdp.hudlibrary.api.IHUDProvider;
+import kdp.hudlibrary.api.enums.Axis;
 import kdp.hudlibrary.element.HUDCompound;
 import kdp.hudlibrary.element.HUDElement;
 import kdp.hudlibrary.element.HUDItemStack;
@@ -189,7 +191,7 @@ public class VanillaImpl {
                     }
 
                     @Override
-                    public double getOffset(PlayerEntity player, Direction facing, IHUDProvider.Axis axis) {
+                    public double getOffset(PlayerEntity player, Direction facing, Axis axis) {
                         return axis == Axis.NORMAL ? -.1 : super.getOffset(player, facing, axis);
                     }
                 };

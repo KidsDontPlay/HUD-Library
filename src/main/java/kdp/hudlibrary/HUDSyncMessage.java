@@ -22,6 +22,8 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
+import kdp.hudlibrary.api.IHUDProvider;
+import kdp.hudlibrary.util.DirectionPos;
 
 public class HUDSyncMessage {
 

@@ -27,6 +27,9 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
+import kdp.hudlibrary.api.IHUDProvider;
+import kdp.hudlibrary.api.enums.Axis;
+import kdp.hudlibrary.api.enums.MarginDirection;
 import kdp.hudlibrary.element.HUDCompound;
 import kdp.hudlibrary.element.HUDElement;
 import kdp.hudlibrary.element.HUDFluidStack;

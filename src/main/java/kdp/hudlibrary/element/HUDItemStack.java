@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
 
-import kdp.hudlibrary.IHUDProvider;
+import kdp.hudlibrary.api.enums.MarginDirection;
 
 public class HUDItemStack extends HUDElement {
     private static final Dimension dim16 = new Dimension(16, 16);
@@ -76,7 +76,7 @@ public class HUDItemStack extends HUDElement {
     }
 
     @Override
-    public int getMargin(IHUDProvider.MarginDirection dir) {
+    public int getMargin(MarginDirection dir) {
         return stack.isEmpty() ? 0 : super.getMargin(dir);
     }
 

@@ -15,7 +15,7 @@ import org.apache.commons.lang3.Validate;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import kdp.hudlibrary.IHUDProvider;
+import kdp.hudlibrary.api.enums.MarginDirection;
 
 public abstract class HUDElement {
 
@@ -38,19 +38,19 @@ public abstract class HUDElement {
         return this;
     }
 
-    public int getMargin(IHUDProvider.MarginDirection dir) {
+    public int getMargin(MarginDirection dir) {
         return margin.get(dir.ordinal());
     }
 
     public final int getMarginHorizontal() {
-        return getMargin(IHUDProvider.MarginDirection.LEFT) + getMargin(IHUDProvider.MarginDirection.RIGHT);
+        return getMargin(MarginDirection.LEFT) + getMargin(MarginDirection.RIGHT);
     }
 
     public final int getMarginVertical() {
-        return getMargin(IHUDProvider.MarginDirection.TOP) + getMargin(IHUDProvider.MarginDirection.BOTTOM);
+        return getMargin(MarginDirection.TOP) + getMargin(MarginDirection.BOTTOM);
     }
 
-    public HUDElement setMargin(IHUDProvider.MarginDirection dir, int margin) {
+    public HUDElement setMargin(MarginDirection dir, int margin) {
         this.margin.put(dir.ordinal(), margin);
         return this;
     }

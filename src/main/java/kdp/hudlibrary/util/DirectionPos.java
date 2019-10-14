@@ -1,4 +1,4 @@
-package kdp.hudlibrary;
+package kdp.hudlibrary.util;
 
 import java.util.concurrent.ExecutionException;
 
