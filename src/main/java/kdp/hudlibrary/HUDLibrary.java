@@ -27,14 +27,11 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
-import kdp.hudlibrary.tehud.HUDCapability;
-import kdp.hudlibrary.tehud.HUDSyncMessage;
-import kdp.hudlibrary.tehud.IHUDProvider;
-import kdp.hudlibrary.tehud.element.HUDCompound;
-import kdp.hudlibrary.tehud.element.HUDElement;
-import kdp.hudlibrary.tehud.element.HUDFluidStack;
-import kdp.hudlibrary.tehud.element.HUDText;
-import kdp.hudlibrary.tehud.element.HUDTexture;
+import kdp.hudlibrary.element.HUDCompound;
+import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.element.HUDFluidStack;
+import kdp.hudlibrary.element.HUDText;
+import kdp.hudlibrary.element.HUDTexture;
 
 @Mod(HUDLibrary.MOD_ID)
 public class HUDLibrary {

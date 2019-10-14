@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud.element;
+package kdp.hudlibrary.element;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import kdp.hudlibrary.tehud.IHUDProvider;
+import kdp.hudlibrary.IHUDProvider;
 
 public class HUDCompound extends HUDElement {
     protected final HUDElement[] elements;

@@ -10,8 +10,6 @@ import net.minecraftforge.fml.config.ModConfig;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import kdp.hudlibrary.tehud.VanillaImpl;
-
 public class HUDConfig {
 
     private static ForgeConfigSpec config;

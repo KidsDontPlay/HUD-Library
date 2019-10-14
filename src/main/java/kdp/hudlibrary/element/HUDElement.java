@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud.element;
+package kdp.hudlibrary.element;
 
 import java.awt.*;
 import java.util.Objects;
@@ -15,7 +15,7 @@ import org.apache.commons.lang3.Validate;
 
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import kdp.hudlibrary.tehud.IHUDProvider;
+import kdp.hudlibrary.IHUDProvider;
 
 public abstract class HUDElement {
 

@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud.element;
+package kdp.hudlibrary.element;
 
 import java.awt.*;
 
@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
 
-import kdp.hudlibrary.tehud.IHUDProvider;
+import kdp.hudlibrary.IHUDProvider;
 
 public class HUDItemStack extends HUDElement {
     private static final Dimension dim16 = new Dimension(16, 16);

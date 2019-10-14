@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud;
+package kdp.hudlibrary;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -7,7 +7,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 
-import kdp.hudlibrary.tehud.element.HUDElement;
+import kdp.hudlibrary.element.HUDElement;
 
 public interface IHUDProvider {
 
@@ -93,7 +93,7 @@ public interface IHUDProvider {
     /**
      * Returns the list of elements in the HUD.
      * Every element uses the whole width of the HUD.
-     * To use more elements in one line you need {@link kdp.hudlibrary.tehud.element.HUDCompound}.
+     * To use more elements in one line you need {@link kdp.hudlibrary.element.HUDCompound}.
      * data is the result of {@link #getNBTData}
      *
      * Called on client.

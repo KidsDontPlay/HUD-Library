@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud;
+package kdp.hudlibrary;
 
 import net.minecraft.nbt.INBT;
 import net.minecraft.util.Direction;

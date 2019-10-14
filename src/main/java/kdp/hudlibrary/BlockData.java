@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud;
+package kdp.hudlibrary;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.tileentity.TileEntity;

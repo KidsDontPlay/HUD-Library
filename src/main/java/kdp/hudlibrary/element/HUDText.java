@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud.element;
+package kdp.hudlibrary.element;
 
 import java.awt.*;
 import java.util.List;

@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud;
+package kdp.hudlibrary;
 
 import java.awt.*;
 import java.util.Collections;
@@ -39,9 +39,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import kdp.hudlibrary.HUDConfig;
-import kdp.hudlibrary.HUDLibrary;
-import kdp.hudlibrary.tehud.element.HUDElement;
+import kdp.hudlibrary.element.HUDElement;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HUDRenderer {

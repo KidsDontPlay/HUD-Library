@@ -1,4 +1,4 @@
-package kdp.hudlibrary.tehud;
+package kdp.hudlibrary;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +47,11 @@ import net.minecraftforge.items.ItemStackHandler;
 
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import kdp.hudlibrary.HUDConfig;
-import kdp.hudlibrary.tehud.element.HUDCompound;
-import kdp.hudlibrary.tehud.element.HUDElement;
-import kdp.hudlibrary.tehud.element.HUDItemStack;
-import kdp.hudlibrary.tehud.element.HUDProgressBar;
-import kdp.hudlibrary.tehud.element.HUDText;
+import kdp.hudlibrary.element.HUDCompound;
+import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.element.HUDItemStack;
+import kdp.hudlibrary.element.HUDProgressBar;
+import kdp.hudlibrary.element.HUDText;
 
 import static kdp.hudlibrary.HUDLibrary.MOD_ID;
 
