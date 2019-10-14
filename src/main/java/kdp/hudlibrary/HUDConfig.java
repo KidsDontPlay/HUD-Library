@@ -33,7 +33,6 @@ public class HUDConfig {
 
     public static void init() {
         Pair<HUDConfig, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(b -> {
-            b.push("Client");
             maxHUDs = b.comment("Max amount of HUDs rendering simultaneously").defineInRange("maxHUDs", 10, 1, 100);
             visibleDistance = b.comment("Distance the HUDs are visible within")
                     .defineInRange("visibleDistance", 20, 4, 100);
@@ -57,7 +56,6 @@ public class HUDConfig {
                 configMap.put(clazz, tc);
                 b.pop();
             }
-            b.pop();
             b.pop();
             return null;
         });

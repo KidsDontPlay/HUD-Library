@@ -55,6 +55,7 @@ public class HUDSyncMessage {
     public void onMessage(HUDSyncMessage message, NetworkEvent.Context ctx) {
         Map<DirectionPos, CompoundNBT> map = message.map;
         ctx.enqueueWork(() -> HUDRenderer.hudElements.putAll(map));
+        ctx.setPacketHandled(true);
     }
 
     public void decode(ByteBuf buf) {
