@@ -9,15 +9,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.items.CapabilityItemHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -38,7 +44,7 @@ public class HUDSyncMessage {
         try {
             for (TileEntity t : player.world.loadedTileEntityList) {
                 IHUDProvider hud = t.getCapability(HUDCapability.cap).orElse(null);
-                if (hud != null && hud.usesServerData() && hud.needsSync() && player.getPositionVector()
+                if (hud != null && hud.usesServerData() /*&& hud.needsSync()*/ && player.getPositionVector()
                         .squareDistanceTo(new Vec3d(t.getPos())) < radius * radius) {
                     for (Direction f : Direction.values()) {
                         if (f.getAxis() == Direction.Axis.Y) {
@@ -46,6 +52,40 @@ public class HUDSyncMessage {
                         }
                         map.put(DirectionPos.of(t.getPos(), f), Objects.requireNonNull(hud.getNBTData(player, f),
                                 "IHUDProvider#getNBTData must not return null."));
+                    }
+                }
+                if (hud == null) {
+                    CompoundNBT nbt = new CompoundNBT();
+                    t.getCapability(CapabilityEnergy.ENERGY).ifPresent(e -> {
+                        nbt.putInt("e", e.getEnergyStored());
+                        nbt.putInt("eMax", e.getMaxEnergyStored());
+                    });
+                    t.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY).ifPresent(f -> {
+                        ListNBT fs = new ListNBT();
+                        IntStream.range(0, f.getTanks()).forEach(i -> {
+                            CompoundNBT n = new CompoundNBT();
+                            if (!f.getFluidInTank(i).isEmpty()) {
+                                n.put("f", f.getFluidInTank(i).writeToNBT(new CompoundNBT()));
+                                n.putInt("m", f.getTankCapacity(i));
+                                fs.add(n);
+                            }
+                        });
+                        if (!fs.isEmpty()) {
+                            nbt.put("fs", fs);
+                        }
+                    });
+                    t.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(i -> {
+                        ListNBT is = IntStream.range(0, i.getSlots()).mapToObj(i::getStackInSlot)
+                                .filter(s -> !s.isEmpty()).map(s -> s.write(new CompoundNBT()))
+                                .collect(Collectors.toCollection(ListNBT::new));
+                        if (!is.isEmpty()) {
+                            nbt.put("is", is);
+                        }
+                    });
+
+                    if (!nbt.isEmpty()) {
+                        nbt.putBoolean("defauld", true);
+                        map.put(DirectionPos.of(t.getPos(), Direction.UP), nbt);
                     }
                 }
             }
@@ -56,7 +96,14 @@ public class HUDSyncMessage {
 
     public void onMessage(HUDSyncMessage message, NetworkEvent.Context ctx) {
         Map<DirectionPos, CompoundNBT> map = message.map;
-        ctx.enqueueWork(() -> HUDRenderer.hudElements.putAll(map));
+        Map<DirectionPos, CompoundNBT> synced = map.entrySet().stream().filter(e -> !e.getValue().getBoolean("defauld"))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        Map<BlockPos, CompoundNBT> defaults = map.entrySet().stream().filter(e -> !synced.containsKey(e.getKey()))
+                .collect(Collectors.toMap(k -> k.getKey().pos, Entry::getValue));
+        ctx.enqueueWork(() -> {
+            HUDRenderer.syncedNBTs.putAll(synced);
+            HUDRenderer.defaultNBTs.putAll(defaults);
+        });
         ctx.setPacketHandled(true);
     }
 

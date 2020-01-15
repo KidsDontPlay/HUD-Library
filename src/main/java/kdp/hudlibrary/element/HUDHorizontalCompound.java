@@ -18,18 +18,18 @@ import net.minecraftforge.fml.client.config.GuiUtils;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import kdp.hudlibrary.api.enums.MarginDirection;
 
-public class HUDCompound extends HUDElement {
+public class HUDHorizontalCompound extends HUDElement {
     protected final HUDElement[] elements;
     protected final boolean lineBreak;
 
-    public HUDCompound(boolean lineBreak, HUDElement... elements) {
+    public HUDHorizontalCompound(boolean lineBreak, HUDElement... elements) {
         super();
         this.elements = Objects.requireNonNull(elements);
         this.lineBreak = lineBreak;
         setMargin(0);
     }
 
-    public HUDCompound(boolean lineBreak, Collection<? extends HUDElement> lis) {
+    public HUDHorizontalCompound(boolean lineBreak, Collection<? extends HUDElement> lis) {
         this(lineBreak, lis.toArray(new HUDElement[lis.size()]));
     }
 

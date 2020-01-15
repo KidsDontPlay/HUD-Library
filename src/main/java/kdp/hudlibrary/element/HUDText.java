@@ -11,7 +11,6 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 
 public class HUDText extends HUDElement {
-    private ITextComponent textComponent;
     private String text;
     private boolean shadow, unicode;
     private final boolean lineBreak;
@@ -20,7 +19,6 @@ public class HUDText extends HUDElement {
 
     public HUDText(ITextComponent textComponent, boolean lineBreak) {
         super();
-        this.textComponent = textComponent;
         this.lineBreak = lineBreak;
         this.text = textComponent.getFormattedText();
     }
@@ -30,7 +28,6 @@ public class HUDText extends HUDElement {
     }
 
     public HUDText setTextComponent(ITextComponent textComponent) {
-        this.textComponent = textComponent;
         this.text = textComponent.getFormattedText();
         return this;
     }

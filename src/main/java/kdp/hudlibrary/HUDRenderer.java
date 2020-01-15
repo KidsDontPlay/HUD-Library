@@ -1,6 +1,7 @@
 package kdp.hudlibrary;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -20,6 +21,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -34,6 +36,7 @@ import net.minecraftforge.common.util.TextTable;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fml.client.config.GuiUtils;
 import net.minecraftforge.fml.common.Mod;
 
@@ -43,11 +46,17 @@ import kdp.hudlibrary.api.IHUDProvider;
 import kdp.hudlibrary.api.enums.Axis;
 import kdp.hudlibrary.api.enums.MarginDirection;
 import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.element.HUDFluidStack;
+import kdp.hudlibrary.element.HUDHorizontalCompound;
+import kdp.hudlibrary.element.HUDItemStack;
+import kdp.hudlibrary.element.HUDProgressBar;
+import kdp.hudlibrary.element.HUDText;
 import kdp.hudlibrary.util.DirectionPos;
 
 @Mod.EventBusSubscriber(modid = HUDLibrary.MOD_ID, value = Dist.CLIENT)
 public class HUDRenderer {
-    static final Map<DirectionPos, CompoundNBT> hudElements = new HashMap<>();
+    static final Map<DirectionPos, CompoundNBT> syncedNBTs = new HashMap<>();
+    static final Map<BlockPos, CompoundNBT> defaultNBTs = new HashMap<>();
     private static Cache<DirectionPos, List<HUDElement>> cachedElements = CacheBuilder.newBuilder().maximumSize(100)
             .expireAfterWrite(250, TimeUnit.MILLISECONDS).build();
     private static Set<TileEntity> tiles = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -57,7 +66,7 @@ public class HUDRenderer {
     @SubscribeEvent
     public static void join(EntityJoinWorldEvent event) {
         if (event.getEntity() instanceof PlayerEntity && event.getWorld().isRemote) {
-            hudElements.clear();
+            syncedNBTs.clear();
             tiles.clear();
             capaMap.invalidateAll();
             cachedElements.invalidateAll();
@@ -68,7 +77,8 @@ public class HUDRenderer {
     public static void tick(TickEvent.PlayerTickEvent event) {
         if (event.side.isClient() && event.phase == TickEvent.Phase.END && event.player.ticksExisted % 20 == 0) {
             tiles = event.player.world.loadedTileEntityList.stream()
-                    .filter(t -> capaMap.getUnchecked(t).isPresent() && !t.isRemoved())
+                    .filter(t -> (capaMap.getUnchecked(t).isPresent() || defaultNBTs.containsKey(t.getPos())) && !t
+                            .isRemoved())
                     .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())));
 
         }
@@ -90,7 +100,9 @@ public class HUDRenderer {
 
         MutableInt counter = new MutableInt(l.size() - HUDConfig.maxHUDs.get());
         l.forEach(t -> {
-            IHUDProvider hud = capaMap.getUnchecked(t).orElse(null);
+            IHUDProvider hud = capaMap.getUnchecked(t).orElse(defaultNBTs.containsKey(t.getPos()) ?
+                    getDefaultProvider(defaultNBTs.get(t.getPos())) :
+                    null);
             if (hud == null || counter.getAndAdd(-1) > 0) {
                 return;
             }
@@ -108,7 +120,7 @@ public class HUDRenderer {
             List<HUDElement> elements;
             try {
                 DirectionPos dp = DirectionPos.of(blockPos, face.getOpposite());
-                CompoundNBT data = hudElements.get(dp);
+                CompoundNBT data = syncedNBTs.get(dp);
                 if (data == null && hud.usesServerData()) {
                     elements = null;
                 } else {
@@ -179,9 +191,8 @@ public class HUDRenderer {
     }
 
     private static void render(List<HUDElement> elements, int effectiveSize) {
-        for (int j = 0; j < elements.size(); ++j) {
+        for (HUDElement e : elements) {
             GlStateManager.depthMask(false);
-            HUDElement e = elements.get(j);
             int marginLeft = e.getMargin(MarginDirection.LEFT), marginTop = e
                     .getMargin(MarginDirection.TOP), marginRight = e.getMargin(MarginDirection.RIGHT), marginBottom = e
                     .getMargin(MarginDirection.BOTTOM);
@@ -206,5 +217,37 @@ public class HUDRenderer {
         return horizontal ?
                 hud.getMargin(MarginDirection.LEFT) + hud.getMargin(MarginDirection.RIGHT) :
                 hud.getMargin(MarginDirection.BOTTOM) + hud.getMargin(MarginDirection.TOP);
+    }
+
+    private static IHUDProvider getDefaultProvider(CompoundNBT nbt) {
+        return (player, facing, data) -> {
+            List<HUDElement> result = new ArrayList<>();
+            if (nbt.contains("e")) {
+                int e = nbt.getInt("e");
+                double eMax = nbt.getInt("eMax");
+                result.add(new HUDProgressBar(-1, 10, Color.gray.getRGB(), Color.red.getRGB()).setFilling(e / eMax));
+                result.add(new HUDText(e + " FE", false).setAlignment(TextTable.Alignment.CENTER));
+            }
+            if (nbt.contains("fs")) {
+                List<FluidStack> fluids = nbt.getList("fs", 10).stream()
+                        .map(n -> FluidStack.loadFluidStackFromNBT(((CompoundNBT) n).getCompound("f")))
+                        .collect(Collectors.toList());
+                result.add(new HUDHorizontalCompound(false,
+                        fluids.stream().map(f -> new HUDFluidStack(f, -1, 30)).collect(Collectors.toList())));
+                result.add(new HUDHorizontalCompound(false,
+                        fluids.stream().map(f -> new HUDText(f.getAmount() + " mB", false))
+                                .collect(Collectors.toList())).setAlignment(TextTable.Alignment.CENTER));
+                /*result.add(new HUDCompound(false,
+                        nbts.stream().map(n -> new HUDText(((CompoundNBT) n).getInt("m") + " mB", false))
+                                .collect(Collectors.toList())));*/
+            }
+            if (nbt.contains("is")) {
+                result.add(new HUDHorizontalCompound(true,
+                        nbt.getList("is", 10).stream().limit(player.isSneaking() ? 15 : 5)
+                                .map(n -> new HUDItemStack(ItemStack.read((CompoundNBT) n)))
+                                .collect(Collectors.toList())));
+            }
+            return result;
+        };
     }
 }

@@ -49,8 +49,8 @@ import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import kdp.hudlibrary.api.IHUDProvider;
 import kdp.hudlibrary.api.enums.Axis;
-import kdp.hudlibrary.element.HUDCompound;
 import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.element.HUDHorizontalCompound;
 import kdp.hudlibrary.element.HUDItemStack;
 import kdp.hudlibrary.element.HUDProgressBar;
 import kdp.hudlibrary.element.HUDText;
@@ -124,7 +124,7 @@ public class VanillaImpl {
                             list.add(new HUDItemStack(output));
                         }
                         if (!list.isEmpty()) {
-                            lis.add(new HUDCompound(false, list).setAlignment(TextTable.Alignment.RIGHT));
+                            lis.add(new HUDHorizontalCompound(false, list).setAlignment(TextTable.Alignment.RIGHT));
                         }
                         if (!fuel.isEmpty()) {
                             lis.add(new HUDItemStack(fuel));
@@ -163,7 +163,8 @@ public class VanillaImpl {
                             if (nbt.isEmpty()) {
                                 continue;
                             }
-                            lis.add(new HUDCompound(false, new HUDItemStack(ItemStack.read(nbt.getCompound("item"))),
+                            lis.add(new HUDHorizontalCompound(false,
+                                    new HUDItemStack(ItemStack.read(nbt.getCompound("item"))),
                                     new HUDProgressBar(-1, 8, 0xEE444444, 0x77777777)
                                             .setFilling(nbt.getDouble("fill"))));
                         }
@@ -267,7 +268,7 @@ public class VanillaImpl {
                             lis.add(new HUDProgressBar(-1, 10, 0xEE444444, 0x77777777).setFilling(1 - brewTime / 400.));
                         }
                         if (!items.get(0).isEmpty() || !items.get(1).isEmpty() || !items.get(2).isEmpty()) {
-                            lis.add(new HUDCompound(false, new HUDItemStack(items.get(0)),
+                            lis.add(new HUDHorizontalCompound(false, new HUDItemStack(items.get(0)),
                                     new HUDItemStack(items.get(1)), new HUDItemStack(items.get(2)))
                                     .setAlignment(TextTable.Alignment.CENTER));
                         }
@@ -280,7 +281,7 @@ public class VanillaImpl {
                             fuelList.add(new HUDProgressBar(-1, 8, 0xEE444444, 0xFFE79E00).setFilling(fuel / 20.));
                         }
                         if (!fuelList.isEmpty()) {
-                            lis.add(new HUDCompound(false, fuelList));
+                            lis.add(new HUDHorizontalCompound(false, fuelList));
                         }
                         return lis;
                     }
@@ -320,7 +321,7 @@ public class VanillaImpl {
                         List<HUDElement> lis = new ArrayList<>();
                         ListNBT list = data.getList("items", 10);
                         if (!list.isEmpty()) {
-                            lis.add(new HUDCompound(true,
+                            lis.add(new HUDHorizontalCompound(true,
                                     list.stream().map(n -> new HUDItemStack(ItemStack.read((CompoundNBT) n)))
                                             .collect(Collectors.toList())));
                         }

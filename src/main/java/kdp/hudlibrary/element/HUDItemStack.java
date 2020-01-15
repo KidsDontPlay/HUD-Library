@@ -12,8 +12,6 @@ import net.minecraft.item.ItemStack;
 import kdp.hudlibrary.api.enums.MarginDirection;
 
 public class HUDItemStack extends HUDElement {
-    private static final Dimension dim16 = new Dimension(16, 16);
-    private static final Dimension dim0 = new Dimension();
 
     private ItemStack stack = ItemStack.EMPTY;
     private boolean overlay = true;
@@ -38,7 +36,7 @@ public class HUDItemStack extends HUDElement {
 
     @Override
     protected Dimension dimension(int maxWidth) {
-        return stack.isEmpty() || maxWidth < 16 ? dim0 : dim16;
+        return stack.isEmpty() || maxWidth < 16 ? new Dimension() : new Dimension(16, 16);
     }
 
     @Override

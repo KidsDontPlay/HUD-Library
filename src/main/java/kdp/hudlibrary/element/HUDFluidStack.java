@@ -16,7 +16,7 @@ import org.lwjgl.opengl.GL11;
 
 public class HUDFluidStack extends HUDElement {
 
-    private FluidStack stack;
+    private FluidStack stack = FluidStack.EMPTY;
     private final int width, height;
 
     public HUDFluidStack(FluidStack stack, int width, int height) {
@@ -33,7 +33,7 @@ public class HUDFluidStack extends HUDElement {
 
     @Override
     protected Dimension dimension(int maxWidth) {
-        if (maxWidth >= 0 && width > maxWidth) {
+        if (maxWidth >= 0 && width > maxWidth || stack.isEmpty()) {
             return new Dimension();
         }
         return new Dimension(width < 0 ? maxWidth : width, height);

@@ -13,14 +13,13 @@ import net.minecraftforge.common.util.TextTable.Alignment;
 
 import org.apache.commons.lang3.Validate;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import kdp.hudlibrary.api.enums.MarginDirection;
 
 public abstract class HUDElement {
 
     protected Alignment align = Alignment.LEFT;
-    protected final Int2IntMap margin = new Int2IntOpenHashMap(4);
+    protected final Int2IntOpenHashMap margin = new Int2IntOpenHashMap(4);
     protected Integer backgroundColor;
     protected final Cache<Integer, Dimension> dimensionCache = CacheBuilder.newBuilder()
             .expireAfterWrite(500, TimeUnit.MILLISECONDS).build();

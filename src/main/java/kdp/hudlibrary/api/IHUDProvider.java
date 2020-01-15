@@ -10,6 +10,7 @@ import net.minecraft.util.Direction;
 import kdp.hudlibrary.api.enums.Axis;
 import kdp.hudlibrary.api.enums.MarginDirection;
 import kdp.hudlibrary.element.HUDElement;
+import kdp.hudlibrary.element.HUDHorizontalCompound;
 
 public interface IHUDProvider {
 
@@ -95,7 +96,7 @@ public interface IHUDProvider {
     /**
      * Returns the list of elements in the HUD.
      * Every element uses the whole width of the HUD.
-     * To use more elements in one line you need {@link kdp.hudlibrary.element.HUDCompound}.
+     * To use more elements in one line you need {@link HUDHorizontalCompound}.
      * data is the result of {@link #getNBTData}
      *
      * Called on client.
@@ -139,9 +140,9 @@ public interface IHUDProvider {
      * @return true if {@link #usesServerData()} returns true
      * and data on server changed and client needs to know about that.
      */
-    default boolean needsSync() {
+    /*default boolean needsSync() {
         return true;
-    }
+    }*/
 
     int defaultBack = 0xBBBBBBDD;
 

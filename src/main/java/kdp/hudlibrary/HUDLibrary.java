@@ -1,13 +1,21 @@
 package kdp.hudlibrary;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.google.common.collect.Lists;
+
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.MobSpawnerTileEntity;
 import net.minecraft.tileentity.SkullTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -18,21 +26,29 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import kdp.hudlibrary.api.IHUDProvider;
 import kdp.hudlibrary.api.enums.Axis;
 import kdp.hudlibrary.api.enums.MarginDirection;
-import kdp.hudlibrary.element.HUDCompound;
 import kdp.hudlibrary.element.HUDElement;
 import kdp.hudlibrary.element.HUDFluidStack;
+import kdp.hudlibrary.element.HUDHorizontalCompound;
+import kdp.hudlibrary.element.HUDLine;
+import kdp.hudlibrary.element.HUDProgressBar;
 import kdp.hudlibrary.element.HUDText;
 import kdp.hudlibrary.element.HUDTexture;
 
@@ -46,7 +62,6 @@ public class HUDLibrary {
 
     public HUDLibrary() {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::clientSetup);
         HUDConfig.init();
         MinecraftForge.EVENT_BUS.addListener(this::attach);
         int index = 0;
@@ -59,11 +74,6 @@ public class HUDLibrary {
 
     private void setup(final FMLCommonSetupEvent event) {
         HUDCapability.register();
-        //WorldGuiCapability.register();
-    }
-
-    private void clientSetup(final FMLClientSetupEvent event) {
-        //ClientRegistry.registerKeyBinding(ClientEvents.OPENWORLDGUI);
     }
 
     public void attach(AttachCapabilitiesEvent<TileEntity> event) {
@@ -127,9 +137,17 @@ public class HUDLibrary {
                         list.add(new HUDText(new StringTextComponent("AlPha djn")
                                 .setStyle(new Style().setBold(true).setStrikethrough(true).setObfuscated(true)),
                                 false));
-                        list.add(new HUDCompound(false,
+                        list.add(new HUDLine(Color.RED.getRGB()));
+                        list.add(new HUDHorizontalCompound(false).setMargin(8));
+                        list.add(new HUDHorizontalCompound(false,
                                 new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 30, 40).setMargin(0),
                                 new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 30, 40).setMargin(0)));
+                        Random ran = new Random(facing.ordinal());
+                        IntStream.range(0, 5).forEach(i -> {
+                            list.add(new HUDProgressBar(-1, 10, 0x00000000, 0xff000000 | ran.nextInt(),
+                                    0xff000000 | ran.nextInt())
+                                    .setFilling(((System.currentTimeMillis() / 40) % 100) / 100D));
+                        });
                         //list.add(new HUDFluidStack(new FluidStack(Fluids.WATER, 1), 20, 60));
                         //list.add(new HUDFluidStack(new FluidStack(Fluids.LAVA, 1), 20, 60));
                         return list;
@@ -144,57 +162,127 @@ public class HUDLibrary {
                     public CompoundNBT getNBTData(PlayerEntity player, Direction facing) {
                         return IHUDProvider.super.getNBTData(player, facing);
                     }
-
-                    @Override
-                    public boolean needsSync() {
-                        return IHUDProvider.super.needsSync();
-                    }
                 };
+            });
+        }
+        if (event.getObject() instanceof MobSpawnerTileEntity && dev) {
+            class Ex implements IItemHandler, IFluidHandler, IEnergyStorage {
+
+                @Override
+                public int receiveEnergy(int maxReceive, boolean simulate) {
+                    return 0;
+                }
+
+                @Override
+                public int extractEnergy(int maxExtract, boolean simulate) {
+                    return 0;
+                }
+
+                @Override
+                public int getEnergyStored() {
+                    return new Random(event.getObject().getPos().hashCode()).nextInt(79000);
+                }
+
+                @Override
+                public int getMaxEnergyStored() {
+                    return 80000;
+                }
+
+                @Override
+                public boolean canExtract() {
+                    return false;
+                }
+
+                @Override
+                public boolean canReceive() {
+                    return false;
+                }
+
+                @Override
+                public int getTanks() {
+                    return new Random(event.getObject().getPos().hashCode()).nextInt(6) + 1;
+                }
+
+                @Nonnull
+                @Override
+                public FluidStack getFluidInTank(int tank) {
+                    return new FluidStack(tank % 2 == 0 ? Fluids.WATER : Fluids.LAVA,
+                            new Random(tank).nextInt(38000) + 20);
+                }
+
+                @Override
+                public int getTankCapacity(int tank) {
+                    return 40000;
+                }
+
+                @Override
+                public boolean isFluidValid(int tank, @Nonnull FluidStack stack) {
+                    return false;
+                }
+
+                @Override
+                public int fill(FluidStack resource, FluidAction action) {
+                    return 0;
+                }
+
+                @Nonnull
+                @Override
+                public FluidStack drain(FluidStack resource, FluidAction action) {
+                    return null;
+                }
+
+                @Nonnull
+                @Override
+                public FluidStack drain(int maxDrain, FluidAction action) {
+                    return null;
+                }
+
+                @Override
+                public int getSlots() {
+                    return new Random(event.getObject().getPos().hashCode()).nextInt(18) + 1;
+                }
+
+                @Nonnull
+                @Override
+                public ItemStack getStackInSlot(int slot) {
+                    List<Item> choice = Lists.newArrayList(ForgeRegistries.ITEMS);
+                    return new ItemStack(choice.get(
+                            new Random(slot + event.getObject().getPos().hashCode()).nextInt(choice.size())));
+                }
+
+                @Nonnull
+                @Override
+                public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+                    return null;
+                }
+
+                @Nonnull
+                @Override
+                public ItemStack extractItem(int slot, int amount, boolean simulate) {
+                    return null;
+                }
+
+                @Override
+                public int getSlotLimit(int slot) {
+                    return 0;
+                }
+
+                @Override
+                public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+                    return false;
+                }
+            }
+            event.addCapability(new ResourceLocation("da", "ma"), new ICapabilityProvider() {
+                @Nonnull
+                @Override
+                public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
+                    if (cap == CapabilityEnergy.ENERGY || cap == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY || cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
+                        return cap.orEmpty(cap, (LazyOptional<T>) LazyOptional.of(() -> new Ex()));
+                    }
+                    return LazyOptional.empty();
+                }
             });
         }
     }
 
 }
-
-/*class Gui extends WorldGui {
-
-	TileEntityChest tile;
-
-	public Gui(TileEntityChest tile) {
-		super();
-		this.tile = tile;
-		this.width = 180;
-	}
-
-	@Override
-	protected void drawBackground(int mouseX, int mouseY, float partialTicks) {
-		//						drawBackgroundTexture();
-		int color = 0xCC000000 | (0x00FFFFFF & guiPos.hashCode());
-		GuiUtils.drawGradientRect(0, 0, 0, width, height, color, color);
-		//		drawItemStack(new ItemStack(Blocks.CHEST, 4), 120, 13, !false);
-		Random ran = new Random(color);
-		//		GuiUtils.drawGradientRect(0, 4, 4, 130, 33, 0xFF000000 | ran.nextInt(), 0xFF000000 | ran.nextInt());
-		color = ~color | 0xFF000000;
-		//		GuiUtils.drawGradientRect(0, 222, 14, 229, 144, color, color);
-		//		drawFluidStack(new FluidStack(FluidRegistry.WATER, 23), 180, 4, 12, 120);
-	}
-
-	@Override
-	protected void drawForeground(int mouseX, int mouseY, float partialTicks) {
-		if (Range.between(0, 40).contains(mouseX) && false)
-			drawTooltip(Arrays.asList("minus + plus"), mouseX, mouseY);
-	}
-
-	@Override
-	public void click(int mouse, int mouseX, int mouseY) {
-		super.click(mouse, mouseX, mouseY);
-		//		System.out.println(container.inventorySlots.get(1).getStack());
-		//		System.out.println(container);
-		//		System.out.println(CommonEvents.getData(FMLClientHandler.instance().getClientPlayerEntity()).containers);
-	}
-
-	@Override
-	public void buttonClicked(GuiButton b, int mouse) {
-	}
-
-}*/
